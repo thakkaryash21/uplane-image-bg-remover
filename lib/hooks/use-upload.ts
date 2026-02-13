@@ -89,18 +89,15 @@ export function useUpload(): UseUploadResult {
 
         return data.data;
       } catch (err) {
-        // If error wasn't already set (network error, etc.)
-        if (!error) {
-          const errorMessage =
-            err instanceof Error ? err.message : "Upload failed";
-          setError(errorMessage);
-        }
+        const errorMessage =
+          err instanceof Error ? err.message : "Upload failed";
+        setError(errorMessage);
         throw err;
       } finally {
         setIsUploading(false);
       }
     },
-    [error],
+    [],
   );
 
   const reset = useCallback(() => {

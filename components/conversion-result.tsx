@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import type { ProcessedImage } from "@/lib/types/image";
+import { useConversion } from "@/lib/hooks/use-conversion";
+import { formatFileSize } from "@/lib/utils/format";
+import TransparencyBackground from "./transparency-background";
 import Button from "./button";
 import Card from "./card";
 import Spinner from "./spinner";
@@ -21,38 +22,7 @@ export default function ConversionResult({
   onDeleteClick,
   onNewConversion,
 }: ConversionResultProps) {
-  const [conversion, setConversion] = useState<ProcessedImage | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function fetchConversion() {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const response = await fetch(`/api/images/${conversionId}`);
-
-        if (!response.ok) {
-          throw new Error("Failed to load conversion");
-        }
-
-        const data = await response.json();
-
-        if (data.success) {
-          setConversion(data.data);
-        } else {
-          setError(data.error.message);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred");
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    fetchConversion();
-  }, [conversionId]);
+  const { conversion, isLoading, error } = useConversion(conversionId);
 
   const handleDownload = async () => {
     if (!conversion) return;
@@ -95,12 +65,6 @@ export default function ConversionResult({
       </Card>
     );
   }
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
 
   return (
     <div className="space-y-6">
@@ -157,12 +121,7 @@ export default function ConversionResult({
           </h3>
           <div className="relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
             {/* Checkerboard pattern for transparency */}
-            <div
-              className="absolute inset-0 opacity-25"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%239C92AC' fill-opacity='0.4'%3E%3Cpath d='M0 0h10v10H0zM10 10h10v10H10z'/%3E%3C/g%3E%3C/svg%3E")`,
-              }}
-            />
+            <TransparencyBackground />
             <img
               src={conversion.originalUrl}
               alt="Original"
@@ -178,12 +137,7 @@ export default function ConversionResult({
           </h3>
           <div className="relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
             {/* Checkerboard pattern for transparency */}
-            <div
-              className="absolute inset-0 opacity-25"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%239C92AC' fill-opacity='0.4'%3E%3Cpath d='M0 0h10v10H0zM10 10h10v10H10z'/%3E%3C/g%3E%3C/svg%3E")`,
-              }}
-            />
+            <TransparencyBackground />
             <img
               src={conversion.url}
               alt="Processed"

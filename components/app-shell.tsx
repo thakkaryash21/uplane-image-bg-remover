@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, useEffect, DragEvent } from "react";
+import { useState, useEffect } from "react";
 import { useConversions } from "@/lib/hooks/use-conversions";
 import { useUpload } from "@/lib/hooks/use-upload";
+import { useWindowDragDrop } from "@/lib/hooks/use-window-drag-drop";
+import { useDeleteConfirmation } from "@/lib/hooks/use-delete-confirmation";
 import Header from "./header";
 import Sidebar from "./sidebar";
 import ImageDropzone from "./image-dropzone";
 import ConversionResult from "./conversion-result";
 import ConfirmationModal from "./confirmation-modal";
-import { createPortal } from "react-dom";
+import Modal from "./modal";
 
 /**
  * Main app shell managing overall layout and state
@@ -22,7 +24,7 @@ export default function AppShell() {
   const [selectedConversionId, setSelectedConversionId] = useState<
     string | null
   >(null);
-  const [isDraggingOverWindow, setIsDraggingOverWindow] = useState(false);
+  // isDraggingOverWindow is now handled by the hook
   const [showInvalidFileModal, setShowInvalidFileModal] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -38,60 +40,6 @@ export default function AppShell() {
 
   useEffect(() => {
     setMounted(true);
-  }, []);
-
-  // Handle window-level drag events for full-page drop overlay
-  useEffect(() => {
-    let dragCounter = 0;
-
-    const handleWindowDragEnter = (e: globalThis.DragEvent) => {
-      e.preventDefault();
-      dragCounter++;
-      if (dragCounter === 1) {
-        setIsDraggingOverWindow(true);
-      }
-    };
-
-    const handleWindowDragLeave = (e: globalThis.DragEvent) => {
-      e.preventDefault();
-      dragCounter--;
-      if (dragCounter === 0) {
-        setIsDraggingOverWindow(false);
-      }
-    };
-
-    const handleWindowDragOver = (e: globalThis.DragEvent) => {
-      e.preventDefault();
-    };
-
-    const handleWindowDrop = (e: globalThis.DragEvent) => {
-      e.preventDefault();
-      dragCounter = 0;
-      setIsDraggingOverWindow(false);
-
-      const file = e.dataTransfer?.files?.[0];
-      if (file) {
-        // Simple client-side check for image type before even trying to upload
-        if (!file.type.startsWith("image/")) {
-          setShowInvalidFileModal(true);
-          return;
-        }
-
-        handleFileSelect(file);
-      }
-    };
-
-    window.addEventListener("dragenter", handleWindowDragEnter);
-    window.addEventListener("dragleave", handleWindowDragLeave);
-    window.addEventListener("dragover", handleWindowDragOver);
-    window.addEventListener("drop", handleWindowDrop);
-
-    return () => {
-      window.removeEventListener("dragenter", handleWindowDragEnter);
-      window.removeEventListener("dragleave", handleWindowDragLeave);
-      window.removeEventListener("dragover", handleWindowDragOver);
-      window.removeEventListener("drop", handleWindowDrop);
-    };
   }, []);
 
   const handleFileSelect = async (file: File) => {
@@ -118,43 +66,31 @@ export default function AppShell() {
     }
   };
 
+  const { isDraggingOverWindow } = useWindowDragDrop({
+    onFileDrop: handleFileSelect,
+    onInvalidType: () => setShowInvalidFileModal(true),
+  });
+
   const handleUploadComplete = (conversionId: string) => {
     refetch(); // Refresh the conversions list
     setSelectedConversionId(conversionId); // Show the newly uploaded conversion
   };
 
-  const [deleteConfirmation, setDeleteConfirmation] = useState<{
-    id: string;
-    isOpen: boolean;
-  }>({ id: "", isOpen: false });
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  // This initiates the delete flow (opens modal)
-  const handleDeleteClick = (id: string) => {
-    setDeleteConfirmation({ id, isOpen: true });
-  };
-
-  // This handles the actual deletion after confirmation
-  const handleDeleteConfirm = async () => {
-    if (!deleteConfirmation.id) return;
-
-    setIsDeleting(true);
-    try {
-      await deleteConversion(deleteConfirmation.id);
-
+  const {
+    deleteConfirmation,
+    isDeleting,
+    requestDelete,
+    cancelDelete,
+    confirmDelete,
+  } = useDeleteConfirmation({
+    onDelete: deleteConversion,
+    onSuccess: () => {
       // If we're viewing the deleted conversion, go back to upload view
       if (selectedConversionId === deleteConfirmation.id) {
         setSelectedConversionId(null);
       }
-
-      setDeleteConfirmation({ id: "", isOpen: false });
-    } catch (err) {
-      console.error("Delete failed:", err);
-      alert("Failed to delete conversion");
-    } finally {
-      setIsDeleting(false);
-    }
-  };
+    },
+  });
 
   const handleNewConversion = () => {
     setSelectedConversionId(null);
@@ -173,7 +109,7 @@ export default function AppShell() {
           conversions={conversions}
           selectedId={selectedConversionId}
           onSelectConversion={setSelectedConversionId}
-          onDeleteClick={handleDeleteClick}
+          onDeleteClick={requestDelete}
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
         />
@@ -184,7 +120,7 @@ export default function AppShell() {
             {selectedConversionId ? (
               <ConversionResult
                 conversionId={selectedConversionId}
-                onDeleteClick={() => handleDeleteClick(selectedConversionId)}
+                onDeleteClick={() => requestDelete(selectedConversionId)}
                 onNewConversion={handleNewConversion}
               />
             ) : (
@@ -202,10 +138,8 @@ export default function AppShell() {
       {/* Delete Confirmation Modal */}
       <ConfirmationModal
         isOpen={deleteConfirmation.isOpen}
-        onClose={() =>
-          setDeleteConfirmation({ ...deleteConfirmation, isOpen: false })
-        }
-        onConfirm={handleDeleteConfirm}
+        onClose={cancelDelete}
+        onConfirm={confirmDelete}
         title="Delete Conversion"
         message="Are you sure you want to delete this conversion? This action cannot be undone."
         confirmText="Delete"
@@ -214,28 +148,25 @@ export default function AppShell() {
       />
 
       {/* Invalid File Modal */}
-      {showInvalidFileModal &&
-        mounted &&
-        // ... existing invalid modal code
-        createPortal(
-          <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-900 rounded-lg p-6 max-w-sm w-full shadow-xl animate-scale-up">
-              <h3 className="text-lg font-bold text-red-600 dark:text-red-400 mb-2">
-                Invalid File Type
-              </h3>
-              <p className="text-gray-600 dark:text-gray-300 mb-4">
-                Please upload a valid image file (PNG, JPEG, WebP).
-              </p>
-              <button
-                onClick={() => setShowInvalidFileModal(false)}
-                className="w-full bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-gray-200 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 transition"
-              >
-                Dismiss
-              </button>
-            </div>
-          </div>,
-          document.body,
-        )}
+      <Modal
+        isOpen={showInvalidFileModal}
+        onClose={() => setShowInvalidFileModal(false)}
+      >
+        <div className="p-6">
+          <h3 className="text-lg font-bold text-red-600 dark:text-red-400 mb-2">
+            Invalid File Type
+          </h3>
+          <p className="text-gray-600 dark:text-gray-300 mb-4">
+            Please upload a valid image file (PNG, JPEG, WebP).
+          </p>
+          <button
+            onClick={() => setShowInvalidFileModal(false)}
+            className="w-full bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-gray-200 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 transition"
+          >
+            Dismiss
+          </button>
+        </div>
+      </Modal>
 
       {/* Full-page Drag Overlay */}
       {isDraggingOverWindow && (

@@ -1,6 +1,14 @@
 import { IImageProcessingStep } from '../image-processing-step';
 import { PipelineStepError } from '../pipeline-step-error';
 
+interface RemoveBgErrorResponse {
+  errors: Array<{
+    title: string;
+    code?: string;
+    detail?: string;
+  }>;
+}
+
 /**
  * Pipeline step that removes image backgrounds using the Remove.bg API.
  * 
@@ -112,10 +120,10 @@ export class BackgroundRemovalStep implements IImageProcessingStep {
   }
 
   private async handleErrorResponse(response: Response): Promise<never> {
-    let errorDetails: any;
+    let errorDetails: RemoveBgErrorResponse;
     
     try {
-      errorDetails = await response.json();
+      errorDetails = await response.json() as RemoveBgErrorResponse;
     } catch {
       errorDetails = { errors: [{ title: 'Unknown error' }] };
     }
