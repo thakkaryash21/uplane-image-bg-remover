@@ -2,8 +2,11 @@
  * File validation utilities for uploaded images
  */
 
-const ALLOWED_MIME_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+import {
+  ALLOWED_MIME_TYPES,
+  MAX_FILE_SIZE_BYTES,
+  MAX_FILE_SIZE_MB,
+} from '@/lib/constants/image-formats';
 
 export interface ValidationSuccess {
   valid: true;
@@ -32,10 +35,10 @@ export function validateImageFile(file: File): ValidationResult {
   }
 
   // Check file size
-  if (file.size > MAX_FILE_SIZE) {
+  if (file.size > MAX_FILE_SIZE_BYTES) {
     return {
       valid: false,
-      error: `File size exceeds maximum allowed size of ${MAX_FILE_SIZE / 1024 / 1024}MB`,
+      error: `File size exceeds maximum allowed size of ${MAX_FILE_SIZE_MB}MB`,
     };
   }
 
@@ -48,7 +51,9 @@ export function validateImageFile(file: File): ValidationResult {
   }
 
   // Check MIME type
-  if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+  if (
+    !(ALLOWED_MIME_TYPES as readonly string[]).includes(file.type)
+  ) {
     return {
       valid: false,
       error: `Invalid file type. Allowed types: ${ALLOWED_MIME_TYPES.join(', ')}`,

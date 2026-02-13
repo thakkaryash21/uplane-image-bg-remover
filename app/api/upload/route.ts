@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { validateImageFile } from '@/lib/utils/validation';
 import { successResponse, errorResponse } from '@/lib/utils/api-response';
 import { ImageProcessingPipeline } from '@/lib/pipeline/image-processing-pipeline';
+import { FormatNormalizationStep } from '@/lib/pipeline/steps/format-normalization.step';
 import { BackgroundRemovalStep } from '@/lib/pipeline/steps/background-removal.step';
 import { HorizontalFlipStep } from '@/lib/pipeline/steps/horizontal-flip.step';
 import { blobStorageService } from '@/lib/services/storage/vercel-blob.service';
@@ -93,6 +94,7 @@ export async function POST(request: NextRequest) {
 
     // Initialize and execute processing pipeline
     const pipeline = new ImageProcessingPipeline([
+      new FormatNormalizationStep(),
       new BackgroundRemovalStep(),
       new HorizontalFlipStep(),
     ]);

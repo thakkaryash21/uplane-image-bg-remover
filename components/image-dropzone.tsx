@@ -3,6 +3,11 @@
 import { useRef, useState, DragEvent } from "react";
 import Alert from "./alert";
 import Spinner from "./spinner";
+import {
+  ALLOWED_IMAGE_ACCEPT,
+  ALLOWED_IMAGE_LABEL,
+  MAX_FILE_SIZE_LABEL,
+} from "@/lib/constants/image-formats";
 
 interface ImageDropzoneProps {
   isUploading: boolean;
@@ -131,7 +136,7 @@ export default function ImageDropzone({
             </div>
 
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              PNG, JPEG, or WebP • Max 10MB
+              {ALLOWED_IMAGE_LABEL} • {MAX_FILE_SIZE_LABEL}
             </p>
           </div>
         )}
@@ -139,7 +144,7 @@ export default function ImageDropzone({
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/png,image/jpeg,image/jpg,image/webp"
+          accept={ALLOWED_IMAGE_ACCEPT}
           className="hidden"
           onChange={handleFileInputChange}
           disabled={isUploading}

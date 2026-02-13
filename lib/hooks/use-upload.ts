@@ -1,15 +1,11 @@
 import { useState, useCallback } from "react";
 import type { ProcessedImage } from "@/lib/types/image";
 import type { ApiResponse } from "@/lib/types/api";
-
-// Reuse validation constants from backend
-const ALLOWED_MIME_TYPES = [
-  "image/png",
-  "image/jpeg",
-  "image/jpg",
-  "image/webp",
-];
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+import {
+  ALLOWED_MIME_TYPES,
+  MAX_FILE_SIZE_BYTES,
+  MAX_FILE_SIZE_MB,
+} from "@/lib/constants/image-formats";
 
 interface UseUploadResult {
   upload: (file: File) => Promise<ProcessedImage>;
@@ -31,14 +27,14 @@ export function useUpload(): UseUploadResult {
       setError(null);
 
       // Client-side validation
-      if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+      if (!(ALLOWED_MIME_TYPES as readonly string[]).includes(file.type)) {
         const errorMessage = `Invalid file type. Allowed types: ${ALLOWED_MIME_TYPES.join(", ")}`;
         setError(errorMessage);
         throw new Error(errorMessage);
       }
 
-      if (file.size > MAX_FILE_SIZE) {
-        const errorMessage = `File size exceeds ${MAX_FILE_SIZE / 1024 / 1024}MB limit`;
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        const errorMessage = `File size exceeds ${MAX_FILE_SIZE_MB}MB limit`;
         setError(errorMessage);
         throw new Error(errorMessage);
       }
@@ -71,6 +67,8 @@ export function useUpload(): UseUploadResult {
               "Background removal service is temporarily unavailable. Please try again.",
             BG_REMOVAL_INVALID_IMAGE:
               "Invalid or corrupted image file. Please try a different image.",
+            NORMALIZATION_FAILED:
+              "Unsupported or corrupted image format. Please try a different image.",
             INVALID_FILE: "Invalid file. Please upload a valid image.",
             FILE_REQUIRED:
               "No file provided. Please select an image to upload.",
