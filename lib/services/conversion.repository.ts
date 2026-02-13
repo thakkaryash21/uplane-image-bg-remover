@@ -34,10 +34,11 @@ export class ConversionRepository {
   /**
    * Create a new conversion record
    * 
-   * @param data - Conversion data (userId, processedBlobUrl, originalBlobUrl, name, size, processedContentType, originalContentType)
+   * @param data - Conversion data (id optional for single UUID, userId, processedBlobUrl, originalBlobUrl, name, size, processedContentType, originalContentType)
    * @returns Created conversion record
    */
   async create(data: {
+    id?: string;
     userId: string;
     processedBlobUrl: string;
     originalBlobUrl: string;

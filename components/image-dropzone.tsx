@@ -9,6 +9,7 @@ import {
   ALLOWED_IMAGE_LABEL,
   MAX_FILE_SIZE_LABEL,
 } from "@/lib/constants/image-formats";
+import { IconUpload } from "./icons";
 
 interface ImageDropzoneProps {
   isUploading: boolean;
@@ -118,20 +119,10 @@ export default function ImageDropzone({
           </div>
         ) : (
           <div className="flex flex-col items-center gap-4 py-12">
-            {/* Cloud Upload Icon */}
-            <svg
-              className="w-16 h-16 text-gray-400 dark:text-gray-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-              />
-            </svg>
+            <IconUpload
+              size="lg"
+              className="text-gray-400 dark:text-gray-600"
+            />
 
             <div className="text-center">
               <p className="text-lg font-medium text-gray-900 dark:text-gray-100">

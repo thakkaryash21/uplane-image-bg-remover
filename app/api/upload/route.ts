@@ -108,8 +108,9 @@ export async function POST(request: NextRequest) {
       'image/png'
     );
 
-    // Create conversion record in database
+    // Create conversion record in database (use conversionId for single UUID across blobs and DB)
     const conversion = await conversionRepository.create({
+      id: conversionId,
       userId: user.userId,
       processedBlobUrl,
       originalBlobUrl,

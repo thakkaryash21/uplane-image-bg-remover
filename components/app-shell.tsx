@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useConversions } from "@/lib/hooks/use-conversions";
 import { useUpload } from "@/lib/hooks/use-upload";
 import { useWindowDragDrop } from "@/lib/hooks/use-window-drag-drop";
@@ -11,6 +11,8 @@ import ImageDropzone from "./image-dropzone";
 import ConversionResult from "./conversion-result";
 import ConfirmationModal from "./confirmation-modal";
 import Modal from "./modal";
+import { IconUpload } from "./icons";
+import { ALLOWED_IMAGE_LABEL } from "@/lib/constants/image-formats";
 
 /**
  * Main app shell managing overall layout and state
@@ -25,9 +27,7 @@ export default function AppShell() {
     string | null
   >(null);
   const [uploadingFile, setUploadingFile] = useState<File | null>(null);
-  // isDraggingOverWindow is now handled by the hook
   const [showInvalidFileModal, setShowInvalidFileModal] = useState(false);
-  const [mounted, setMounted] = useState(false);
 
   const { conversions, isLoading, deleteConversion, refetch } =
     useConversions();
@@ -38,10 +38,6 @@ export default function AppShell() {
     error: uploadError,
     reset: resetUpload,
   } = useUpload();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const handleFileSelect = async (file: File) => {
     // If not already on upload screen, go there
@@ -164,7 +160,7 @@ export default function AppShell() {
             Invalid File Type
           </h3>
           <p className="text-gray-600 dark:text-gray-300 mb-4">
-            Please upload a valid image file (PNG, JPEG, WebP).
+            Please upload a valid image file ({ALLOWED_IMAGE_LABEL}).
           </p>
           <button
             onClick={() => setShowInvalidFileModal(false)}
@@ -177,22 +173,12 @@ export default function AppShell() {
 
       {/* Full-page Drag Overlay */}
       {isDraggingOverWindow && (
-        // ... existing overlay code
         <div className="drag-overlay animate-fade-in">
           <div className="text-center">
-            <svg
-              className="w-24 h-24 mx-auto text-white mb-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-              />
-            </svg>
+            <IconUpload
+              size="xl"
+              className="mx-auto text-white mb-6"
+            />
             <p className="text-3xl font-bold text-white mb-2">
               Drop your image anywhere
             </p>
