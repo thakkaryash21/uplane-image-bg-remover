@@ -30,10 +30,11 @@ import { prisma } from '@/lib/prisma';
  * 1. Resolve user (auth session, guest cookie, or create new guest)
  * 2. If both session + guest cookie exist, trigger merge
  * 3. Validate uploaded file (type, size)
- * 4. Run processing pipeline (remove background -> flip horizontally)
- * 5. Store processed image in Vercel Blob
- * 6. Create Conversion record in DB linked to userId
- * 7. Return image metadata with proxy URL
+ * 4. Store original image in Vercel Blob
+ * 5. Run processing pipeline (remove background -> flip horizontally)
+ * 6. Store processed image in Vercel Blob
+ * 7. Create Conversion record in DB with both blob URLs
+ * 8. Return image metadata with proxy URLs (processed + original)
  */
 export async function POST(request: NextRequest) {
   try {
@@ -92,6 +93,19 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const imageBuffer = Buffer.from(arrayBuffer);
 
+    // Generate UUID for this conversion (shared between original and processed images)
+    const conversionId = randomUUID();
+    const blobService = new VercelBlobStorageService();
+    const cleanFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+
+    // Store original image in blob storage (before processing)
+    const originalBlobPath = `originals/${conversionId}/${cleanFilename}`;
+    const { url: originalBlobUrl } = await blobService.upload(
+      imageBuffer,
+      originalBlobPath,
+      file.type
+    );
+
     // Initialize processing pipeline
     const pipeline = new ImageProcessingPipeline([
       new BackgroundRemovalStep(),
@@ -102,13 +116,11 @@ export async function POST(request: NextRequest) {
     const processedBuffer = await pipeline.execute(imageBuffer);
 
     // Store processed image in blob storage
-    const blobService = new VercelBlobStorageService();
-    const cleanFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const blobPath = `images/${randomUUID()}/${cleanFilename}.png`;
+    const processedBlobPath = `images/${conversionId}/${cleanFilename}.png`;
     
-    const { url: blobUrl, size } = await blobService.upload(
+    const { url: processedBlobUrl, size } = await blobService.upload(
       processedBuffer,
-      blobPath,
+      processedBlobPath,
       'image/png'
     );
 
@@ -116,10 +128,12 @@ export async function POST(request: NextRequest) {
     const conversionRepo = new ConversionRepository();
     const conversion = await conversionRepo.create({
       userId: user.userId,
-      blobUrl,
+      processedBlobUrl,
+      originalBlobUrl,
       originalName: file.name,
       size,
-      contentType: 'image/png',
+      processedContentType: 'image/png',
+      originalContentType: file.type,
     });
 
     // Create response with proxy URL

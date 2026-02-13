@@ -7,8 +7,10 @@ import type { Conversion } from '@prisma/client';
 export interface ProcessedImage {
   /** UUID of the conversion record */
   id: string;
-  /** Proxy URL to access the image (e.g., /api/images/{id}/file) - NOT the blob URL */
+  /** Proxy URL to access the processed image (e.g., /api/images/{id}/file) - NOT the blob URL */
   url: string;
+  /** Proxy URL to access the original image (e.g., /api/images/{id}/original) */
+  originalUrl: string;
   /** Original filename from upload */
   originalName: string;
   /** File size in bytes */
@@ -29,6 +31,7 @@ export function toProcessedImage(conversion: Conversion): ProcessedImage {
   return {
     id: conversion.id,
     url: `/api/images/${conversion.id}/file`,
+    originalUrl: `/api/images/${conversion.id}/original`,
     originalName: conversion.originalName,
     size: conversion.size,
     createdAt: conversion.createdAt.toISOString(),

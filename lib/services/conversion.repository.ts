@@ -11,15 +11,17 @@ export class ConversionRepository {
   /**
    * Create a new conversion record
    * 
-   * @param data - Conversion data (userId, blobUrl, originalName, size, contentType)
+   * @param data - Conversion data (userId, processedBlobUrl, originalBlobUrl, originalName, size, processedContentType, originalContentType)
    * @returns Created conversion record
    */
   async create(data: {
     userId: string;
-    blobUrl: string;
+    processedBlobUrl: string;
+    originalBlobUrl: string;
     originalName: string;
     size: number;
-    contentType: string;
+    processedContentType: string;
+    originalContentType: string;
   }): Promise<Conversion> {
     return await prisma.conversion.create({
       data,

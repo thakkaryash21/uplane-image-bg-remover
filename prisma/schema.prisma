@@ -62,13 +62,15 @@ model VerificationToken {
 // -- Application table --
 
 model Conversion {
-  id           String   @id @default(uuid())
-  userId       String
-  blobUrl      String
-  originalName String
-  size         Int
-  contentType  String
-  createdAt    DateTime @default(now())
+  id                   String   @id @default(uuid())
+  userId               String
+  processedBlobUrl     String
+  originalBlobUrl      String
+  originalName         String
+  size                 Int
+  processedContentType String
+  originalContentType  String
+  createdAt            DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
   @@index([userId])

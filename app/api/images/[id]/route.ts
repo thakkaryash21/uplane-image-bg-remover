@@ -85,7 +85,7 @@ export async function GET(
 /**
  * DELETE /api/images/[id]
  * 
- * Deletes a processed image and its metadata from both blob storage and database.
+ * Deletes both original and processed images and their metadata from blob storage and database.
  * Verifies the image exists and the user owns it before attempting deletion.
  * 
  * Authentication required: User must be authenticated (session or guest cookie)
@@ -145,9 +145,10 @@ export async function DELETE(
       );
     }
 
-    // Delete blob from storage
+    // Delete both blobs from storage
     const blobService = new VercelBlobStorageService();
-    await blobService.delete(conversion.blobUrl);
+    await blobService.delete(conversion.processedBlobUrl);
+    await blobService.delete(conversion.originalBlobUrl);
 
     // Delete conversion record from database
     await conversionRepo.deleteById(id);
