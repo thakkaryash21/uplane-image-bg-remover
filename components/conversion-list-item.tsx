@@ -22,7 +22,7 @@ interface ConversionListItemProps {
   conversion: ProcessedImage;
   isActive: boolean;
   onClick: () => void;
-  onDelete: (id: string) => Promise<void>;
+  onDeleteClick: (id: string) => void;
 }
 
 /**
@@ -33,21 +33,18 @@ export default function ConversionListItem({
   conversion,
   isActive,
   onClick,
-  onDelete,
+  onDeleteClick,
 }: ConversionListItemProps) {
-  const handleDelete = async (e: React.MouseEvent) => {
+  const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation(); // Don't trigger onClick
-
-    if (confirm("Are you sure you want to delete this conversion?")) {
-      await onDelete(conversion.id);
-    }
+    onDeleteClick(conversion.id);
   };
 
   const relativeTime = formatRelativeTime(new Date(conversion.createdAt));
 
   return (
     <div
-      className={`conversion-item ${isActive ? "conversion-item-active" : ""}`}
+      className={`conversion-item group ${isActive ? "conversion-item-active" : ""}`}
       onClick={onClick}
       role="button"
       tabIndex={0}
@@ -79,12 +76,11 @@ export default function ConversionListItem({
       {/* Delete button */}
       <button
         onClick={handleDelete}
-        className="p-2 text-gray-400 hover:text-error-600 dark:hover:text-error-400 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-        aria-label={`Delete ${conversion.originalName}`}
-        title="Delete"
+        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors focus:opacity-100 focus:outline-none cursor-pointer"
+        title="Delete conversion"
       >
         <svg
-          className="w-4 h-4"
+          className="w-5 h-5"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"

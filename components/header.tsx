@@ -36,14 +36,21 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
             </svg>
           </button>
 
-          {/* Logo/Title */}
-          <div>
-            <h1 className="text-lg md:text-xl font-bold text-gray-900 dark:text-gray-50">
-              Image Processor
-            </h1>
-            <p className="hidden sm:block text-xs text-gray-600 dark:text-gray-400">
-              Remove backgrounds and flip images
-            </p>
+          {/* Logo */}
+          <div className="flex items-center gap-3">
+            <img
+              src="/Logo.png"
+              alt="Logo"
+              className="h-8 w-auto object-contain"
+            />
+            <div>
+              <h1 className="text-lg md:text-xl font-bold text-gray-900 dark:text-gray-50">
+                Image Processor
+              </h1>
+              <p className="hidden sm:block text-xs text-gray-600 dark:text-gray-400">
+                Remove backgrounds and flip images
+              </p>
+            </div>
           </div>
         </div>
 

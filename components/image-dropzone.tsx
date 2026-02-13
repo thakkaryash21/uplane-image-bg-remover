@@ -1,12 +1,14 @@
 "use client";
 
 import { useRef, useState, DragEvent } from "react";
-import { useUpload } from "@/lib/hooks/use-upload";
 import Alert from "./alert";
 import Spinner from "./spinner";
 
 interface ImageDropzoneProps {
-  onUploadComplete: (conversionId: string) => void;
+  isUploading: boolean;
+  error?: string | null;
+  onFileSelect: (file: File) => Promise<void>;
+  onRetry: () => void;
 }
 
 /**
@@ -19,21 +21,13 @@ interface ImageDropzoneProps {
  * - Full-page drag overlay (rendered via portal managed by parent)
  */
 export default function ImageDropzone({
-  onUploadComplete,
+  isUploading,
+  error,
+  onFileSelect,
+  onRetry,
 }: ImageDropzoneProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const { upload, isUploading, error, reset } = useUpload();
-
-  const handleFileSelect = async (file: File) => {
-    try {
-      const result = await upload(file);
-      onUploadComplete(result.id);
-    } catch (err) {
-      // Error is already set by useUpload hook
-      console.error("Upload failed:", err);
-    }
-  };
 
   const handleDrop = async (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -41,7 +35,7 @@ export default function ImageDropzone({
 
     const file = e.dataTransfer.files[0];
     if (file) {
-      await handleFileSelect(file);
+      await onFileSelect(file);
     }
   };
 
@@ -64,7 +58,7 @@ export default function ImageDropzone({
   ) => {
     const file = e.target.files?.[0];
     if (file) {
-      await handleFileSelect(file);
+      await onFileSelect(file);
     }
   };
 
@@ -75,12 +69,6 @@ export default function ImageDropzone({
         <Alert type="error">
           <div className="flex items-center justify-between">
             <span>{error}</span>
-            <button
-              onClick={reset}
-              className="ml-4 text-sm font-medium underline hover:no-underline"
-            >
-              Try again
-            </button>
           </div>
         </Alert>
       )}

@@ -8,7 +8,7 @@ import Spinner from "./spinner";
 
 interface ConversionResultProps {
   conversionId: string;
-  onDelete: (id: string) => Promise<void>;
+  onDeleteClick: (id: string) => void;
   onNewConversion: () => void;
 }
 
@@ -18,13 +18,12 @@ interface ConversionResultProps {
  */
 export default function ConversionResult({
   conversionId,
-  onDelete,
+  onDeleteClick,
   onNewConversion,
 }: ConversionResultProps) {
   const [conversion, setConversion] = useState<ProcessedImage | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     async function fetchConversion() {
@@ -74,19 +73,21 @@ export default function ConversionResult({
     }
   };
 
-  const handleDelete = async () => {
+  const handleDeleteClick = () => {
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
     if (!conversion) return;
 
-    if (confirm("Are you sure you want to delete this conversion?")) {
-      setIsDeleting(true);
-      try {
-        await onDelete(conversion.id);
-        onNewConversion(); // Navigate back to upload view
-      } catch (err) {
-        alert("Failed to delete conversion");
-      } finally {
-        setIsDeleting(false);
-      }
+    setIsDeleting(true);
+    try {
+      await onDelete(conversion.id);
+      setShowDeleteModal(false);
+      onNewConversion(); // Navigate back to upload view
+    } catch (err) {
+      alert("Failed to delete conversion");
+      setIsDeleting(false);
     }
   };
 
@@ -122,10 +123,11 @@ export default function ConversionResult({
   return (
     <div className="space-y-6">
       {/* Metadata */}
+      {/* Metadata */}
       <Card className="!p-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <div>
-            <h3 className="font-medium text-gray-900 dark:text-gray-100">
+        <div className="flex flex-row items-center justify-between gap-2">
+          <div className="min-w-0">
+            <h3 className="font-medium text-gray-900 dark:text-gray-100 truncate">
               {conversion.originalName}
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -139,6 +141,28 @@ export default function ConversionResult({
               })}
             </p>
           </div>
+
+          <Button
+            onClick={() => onDeleteClick(conversion.id)}
+            variant="danger"
+            className="shrink-0"
+            title="Delete conversion"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              />
+            </svg>
+            <span className="hidden sm:inline">Delete</span>
+          </Button>
         </div>
       </Card>
 
@@ -149,11 +173,18 @@ export default function ConversionResult({
           <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">
             Original
           </h3>
-          <div className="aspect-auto max-h-[300px] md:max-h-[500px] overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+          <div className="relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+            {/* Checkerboard pattern for transparency */}
+            <div
+              className="absolute inset-0 opacity-25"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%239C92AC' fill-opacity='0.4'%3E%3Cpath d='M0 0h10v10H0zM10 10h10v10H10z'/%3E%3C/g%3E%3C/svg%3E")`,
+              }}
+            />
             <img
               src={conversion.originalUrl}
               alt="Original"
-              className="max-w-full max-h-full object-contain"
+              className="w-full h-auto relative z-10"
             />
           </div>
         </Card>
@@ -163,35 +194,61 @@ export default function ConversionResult({
           <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">
             Processed
           </h3>
-          <div className="aspect-auto max-h-[300px] md:max-h-[500px] overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+          <div className="relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+            {/* Checkerboard pattern for transparency */}
+            <div
+              className="absolute inset-0 opacity-25"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%239C92AC' fill-opacity='0.4'%3E%3Cpath d='M0 0h10v10H0zM10 10h10v10H10z'/%3E%3C/g%3E%3C/svg%3E")`,
+              }}
+            />
             <img
               src={conversion.url}
               alt="Processed"
-              className="max-w-full max-h-full object-contain"
+              className="w-full h-auto relative z-10"
             />
           </div>
         </Card>
       </div>
 
       {/* Actions */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <Button onClick={handleDownload} variant="primary" className="flex-1">
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+      {/* URL Display */}
+      <Card className="!p-0 overflow-hidden">
+        <div className="flex bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg">
+          <div className="flex-1 px-4 py-3 overflow-x-auto whitespace-nowrap scrollbar-hide flex items-center">
+            <code className="text-sm font-mono text-gray-600 dark:text-gray-300">
+              {window.location.origin}
+              {conversion.url}
+            </code>
+          </div>
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(
+                `${window.location.origin}${conversion.url}`,
+              );
+            }}
+            className="px-4 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 border-l border-gray-200 dark:border-gray-700 transition-colors flex items-center justify-center shrink-0"
+            title="Copy URL"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-            />
-          </svg>
-          Download
-        </Button>
+            <svg
+              className="w-5 h-5 text-gray-500 dark:text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+              />
+            </svg>
+          </button>
+        </div>
+      </Card>
 
+      {/* Actions */}
+      <div className="flex flex-col sm:flex-row gap-3">
         <Button
           onClick={onNewConversion}
           variant="secondary"
@@ -213,12 +270,7 @@ export default function ConversionResult({
           New Conversion
         </Button>
 
-        <Button
-          onClick={handleDelete}
-          variant="danger"
-          isLoading={isDeleting}
-          className="flex-1 sm:flex-initial"
-        >
+        <Button onClick={handleDownload} variant="primary" className="flex-1">
           <svg
             className="w-5 h-5"
             fill="none"
@@ -229,10 +281,10 @@ export default function ConversionResult({
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth={2}
-              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
             />
           </svg>
-          Delete
+          Download
         </Button>
       </div>
     </div>

@@ -8,7 +8,7 @@ interface SidebarProps {
   conversions: ProcessedImage[];
   selectedId: string | null;
   onSelectConversion: (id: string | null) => void;
-  onDeleteConversion: (id: string) => Promise<void>;
+  onDeleteClick: (id: string) => void;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -24,7 +24,7 @@ export default function Sidebar({
   conversions,
   selectedId,
   onSelectConversion,
-  onDeleteConversion,
+  onDeleteClick,
   isOpen,
   onClose,
 }: SidebarProps) {
@@ -112,7 +112,7 @@ export default function Sidebar({
                       onSelectConversion(conversion.id);
                       onClose(); // Close sidebar on mobile
                     }}
-                    onDelete={onDeleteConversion}
+                    onDeleteClick={onDeleteClick}
                   />
                 ))}
               </div>

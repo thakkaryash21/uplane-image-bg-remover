@@ -40,19 +40,41 @@ export default function LoginPrompt() {
     return (
       <div className="flex items-center gap-3">
         <div className="hidden sm:flex items-center gap-2">
-          {session.user.image && (
+          {session.user.image ? (
             <img
               src={session.user.image}
               alt={session.user.name || "User"}
-              className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-700"
+              className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-700 object-cover"
+              referrerPolicy="no-referrer"
             />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-300 font-bold border border-primary-200 dark:border-primary-800">
+              {session.user.name?.[0] || "U"}
+            </div>
           )}
           <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
             {session.user.name || session.user.email}
           </span>
         </div>
-        <Button variant="secondary" onClick={handleSignOut} className="!py-2">
-          Sign out
+        <Button
+          variant="secondary"
+          onClick={handleSignOut}
+          className="!py-2 gap-2"
+        >
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+            />
+          </svg>
+          <span className="hidden sm:inline">Sign out</span>
         </Button>
       </div>
     );
@@ -65,7 +87,7 @@ export default function LoginPrompt() {
         <Button
           variant="primary"
           onClick={handleLoginClick}
-          className="login-prompt-glow !py-2 text-sm sm:text-base"
+          className="login-prompt-glow !py-2 text-sm sm:text-base gap-2"
         >
           <svg
             className="w-5 h-5"
@@ -77,7 +99,7 @@ export default function LoginPrompt() {
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth={2}
-              d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
+              d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
             />
           </svg>
           <span className="hidden sm:inline">Sign in to save your work</span>
@@ -91,7 +113,24 @@ export default function LoginPrompt() {
   // Unauthenticated state - prompt already seen
   return (
     <>
-      <Button variant="secondary" onClick={handleLoginClick} className="!py-2">
+      <Button
+        variant="secondary"
+        onClick={handleLoginClick}
+        className="!py-2 gap-2"
+      >
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
+          />
+        </svg>
         Sign in
       </Button>
       <LoginModal isOpen={showModal} onClose={() => setShowModal(false)} />
