@@ -1,16 +1,13 @@
-import { put, list, del } from '@vercel/blob';
-import { randomUUID } from 'crypto';
-import type { IStorageService } from './interface';
-import type { ProcessedImage } from '@/lib/types/image';
+import { put, del } from '@vercel/blob';
+import type { IBlobStorageService } from './blob-storage.interface';
 
 /**
- * Vercel Blob storage implementation.
+ * Vercel Blob storage implementation
  * 
- * Stores processed images in Vercel Blob with the following structure:
- * - Path: images/{uuid}/{originalFilename}.png
- * - UUID serves as the image ID for retrieval/deletion
+ * Provides file upload/download/delete operations using Vercel Blob.
+ * Does NOT manage metadata - that's the database's responsibility.
  */
-export class VercelBlobStorageService implements IStorageService {
+export class VercelBlobStorageService implements IBlobStorageService {
   constructor() {
     // Verify that BLOB_READ_WRITE_TOKEN is available
     // Note: On Vercel, this is automatically set. For local dev, it must be configured.
@@ -24,90 +21,51 @@ export class VercelBlobStorageService implements IStorageService {
 
   async upload(
     buffer: Buffer,
-    filename: string,
+    pathname: string,
     contentType: string
-  ): Promise<ProcessedImage> {
-    const id = randomUUID();
-    
-    // Clean filename to avoid path issues
-    const cleanFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const pathname = `images/${id}/${cleanFilename}.png`;
-
+  ): Promise<{ url: string; size: number }> {
     try {
       const blob = await put(pathname, buffer, {
         access: 'public',
-        contentType: 'image/png', // Always PNG after processing
+        contentType,
       });
 
       return {
-        id,
         url: blob.url,
-        originalName: filename,
         size: buffer.length,
-        createdAt: new Date().toISOString(),
       };
     } catch (error) {
       throw new Error(
-        `Failed to upload image to storage: ${(error as Error).message}`,
+        `Failed to upload file to blob storage: ${(error as Error).message}`,
         { cause: error }
       );
     }
   }
 
-  async getById(id: string): Promise<ProcessedImage | null> {
+  async fetchBlob(url: string): Promise<Buffer> {
     try {
-      const { blobs } = await list({
-        prefix: `images/${id}/`,
-      });
-
-      if (blobs.length === 0) {
-        return null;
-      }
-
-      // Get the first blob (should only be one per ID)
-      const blob = blobs[0];
+      const response = await fetch(url);
       
-      // Extract original filename from pathname
-      const pathParts = blob.pathname.split('/');
-      const fileNameWithExt = pathParts[pathParts.length - 1];
-      const originalName = fileNameWithExt.replace('.png', '');
-
-      return {
-        id,
-        url: blob.url,
-        originalName,
-        size: blob.size,
-        createdAt: blob.uploadedAt.toISOString(),
-      };
+      if (!response.ok) {
+        throw new Error(`Failed to fetch blob: ${response.statusText}`);
+      }
+      
+      const arrayBuffer = await response.arrayBuffer();
+      return Buffer.from(arrayBuffer);
     } catch (error) {
       throw new Error(
-        `Failed to retrieve image from storage: ${(error as Error).message}`,
+        `Failed to fetch blob from storage: ${(error as Error).message}`,
         { cause: error }
       );
     }
   }
 
-  async deleteById(id: string): Promise<void> {
+  async delete(url: string): Promise<void> {
     try {
-      // First, find the blob(s) with this ID
-      const { blobs } = await list({
-        prefix: `images/${id}/`,
-      });
-
-      if (blobs.length === 0) {
-        throw new Error(`Image with ID ${id} not found`);
-      }
-
-      // Delete all blobs with this prefix (should be just one)
-      const urls = blobs.map(blob => blob.url);
-      await del(urls);
+      await del(url);
     } catch (error) {
-      if ((error as Error).message.includes('not found')) {
-        throw error;
-      }
-      
       throw new Error(
-        `Failed to delete image from storage: ${(error as Error).message}`,
+        `Failed to delete blob from storage: ${(error as Error).message}`,
         { cause: error }
       );
     }
