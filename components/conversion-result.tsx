@@ -117,7 +117,7 @@ export default function ConversionResult({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       {/* Metadata */}
       <Card className="!p-4">
         <div className="flex flex-row items-center justify-between gap-2">
@@ -134,12 +134,12 @@ export default function ConversionResult({
                   if (e.key === "Escape") handleCancelRename();
                 }}
                 style={{ width: `${Math.max(editValue.length, 1) + 1}ch` }}
-                className="font-medium text-gray-900 dark:text-gray-100 bg-transparent border-b border-gray-300 dark:border-gray-600 outline-none py-0.5 min-w-0 max-w-full block"
+                className="text-base font-medium text-gray-900 dark:text-gray-100 bg-transparent border-b border-gray-300 dark:border-gray-600 outline-none py-0.5 min-w-0 max-w-full block"
               />
             ) : (
               <h3
                 onDoubleClick={handleDoubleClick}
-                className="font-medium text-gray-900 dark:text-gray-100 truncate cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 rounded px-1 -mx-1 w-fit max-w-full"
+                className="text-base font-medium text-gray-900 dark:text-gray-100 truncate cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 rounded px-1 -mx-1 w-fit max-w-full"
                 title="Double-click to rename"
               >
                 {conversion.name}
@@ -176,14 +176,16 @@ export default function ConversionResult({
           <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">
             Original
           </h3>
-          <div className="relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-            {/* Checkerboard pattern for transparency */}
-            <TransparencyBackground />
-            <img
-              src={conversion.originalUrl}
-              alt="Original"
-              className="w-full h-auto relative z-10"
-            />
+          <div className="flex justify-center">
+            <div className="relative rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden inline-block max-w-full leading-[0]">
+              {/* Checkerboard pattern for transparency */}
+              <TransparencyBackground />
+              <img
+                src={conversion.originalUrl}
+                alt="Original"
+                className="block w-auto h-auto max-w-full max-h-[85dvh] object-contain relative z-10"
+              />
+            </div>
           </div>
         </Card>
 
@@ -192,14 +194,16 @@ export default function ConversionResult({
           <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">
             Processed
           </h3>
-          <div className="relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-            {/* Checkerboard pattern for transparency */}
-            <TransparencyBackground />
-            <img
-              src={conversion.url}
-              alt="Processed"
-              className="w-full h-auto relative z-10"
-            />
+          <div className="flex justify-center">
+            <div className="relative rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden inline-block max-w-full leading-[0]">
+              {/* Checkerboard pattern for transparency */}
+              <TransparencyBackground />
+              <img
+                src={conversion.url}
+                alt="Processed"
+                className="block w-auto h-auto max-w-full max-h-[85dvh] object-contain relative z-10"
+              />
+            </div>
           </div>
         </Card>
       </div>
