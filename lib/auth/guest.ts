@@ -1,5 +1,7 @@
 import { SignJWT, jwtVerify } from 'jose';
+import { randomUUID } from 'crypto';
 import type { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 const GUEST_COOKIE_NAME = 'guest_token';
 const GUEST_TOKEN_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
@@ -11,6 +13,33 @@ const GUEST_TOKEN_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
  * anonymous sessions before authentication. Signed with AUTH_SECRET
  * to prevent tampering.
  */
+
+/**
+ * Create a new guest user in the database and generate cookie token
+ * 
+ * This function handles the complete guest user creation flow:
+ * 1. Generate a UUID for the guest user
+ * 2. Create guest user record in database
+ * 3. Generate signed JWT cookie token
+ * 
+ * @returns Object containing the guest user ID and signed token
+ */
+export async function createGuestUser(): Promise<{ userId: string; token: string }> {
+  const guestUserId = randomUUID();
+  
+  // Create guest user in database
+  await prisma.user.create({
+    data: {
+      id: guestUserId,
+      isGuest: true,
+    },
+  });
+  
+  // Generate signed JWT token
+  const token = await createGuestCookie(guestUserId);
+  
+  return { userId: guestUserId, token };
+}
 
 /**
  * Create a signed JWT guest cookie value

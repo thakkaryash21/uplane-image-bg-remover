@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { ConversionRepository } from '@/lib/services/conversion.repository';
 
 /**
  * Merge a guest user into an authenticated user
@@ -20,10 +21,9 @@ export async function mergeGuestUser(
   try {
     await prisma.$transaction(async (tx) => {
       // Step 1: Reassign all conversions from guest to authenticated user
-      await tx.conversion.updateMany({
-        where: { userId: guestUserId },
-        data: { userId: authenticatedUserId },
-      });
+      // Use ConversionRepository with transaction client to avoid code duplication
+      const conversionRepo = new ConversionRepository(tx);
+      await conversionRepo.reassignUser(guestUserId, authenticatedUserId);
       
       // Step 2: Delete the orphaned guest user record
       // This will fail if the user doesn't exist, which is fine - just means

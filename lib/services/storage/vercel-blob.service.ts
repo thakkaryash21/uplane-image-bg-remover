@@ -1,5 +1,6 @@
 import { put, del } from '@vercel/blob';
 import type { IBlobStorageService } from './blob-storage.interface';
+import { BlobStorageError } from './blob-storage-error';
 
 /**
  * Vercel Blob storage implementation
@@ -35,7 +36,8 @@ export class VercelBlobStorageService implements IBlobStorageService {
         size: buffer.length,
       };
     } catch (error) {
-      throw new Error(
+      throw new BlobStorageError(
+        'upload',
         `Failed to upload file to blob storage: ${(error as Error).message}`,
         { cause: error }
       );
@@ -53,7 +55,8 @@ export class VercelBlobStorageService implements IBlobStorageService {
       const arrayBuffer = await response.arrayBuffer();
       return Buffer.from(arrayBuffer);
     } catch (error) {
-      throw new Error(
+      throw new BlobStorageError(
+        'fetch',
         `Failed to fetch blob from storage: ${(error as Error).message}`,
         { cause: error }
       );
@@ -64,10 +67,16 @@ export class VercelBlobStorageService implements IBlobStorageService {
     try {
       await del(url);
     } catch (error) {
-      throw new Error(
+      throw new BlobStorageError(
+        'delete',
         `Failed to delete blob from storage: ${(error as Error).message}`,
         { cause: error }
       );
     }
   }
 }
+
+/**
+ * Module-level singleton instance for use across the application
+ */
+export const blobStorageService = new VercelBlobStorageService();

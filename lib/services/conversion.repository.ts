@@ -1,13 +1,36 @@
 import { prisma } from '@/lib/prisma';
-import type { Conversion } from '@prisma/client';
+import type { Conversion, PrismaClient } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
+
+/**
+ * Prisma transaction client type
+ */
+type TransactionClient = Omit<
+  PrismaClient,
+  '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+>;
 
 /**
  * Repository for Conversion entity
  * 
  * Handles all database operations for image conversion records.
  * Conversions link users to their processed images stored in blob storage.
+ * 
+ * Supports optional transaction client for use within Prisma transactions.
  */
 export class ConversionRepository {
+  private db: PrismaClient | TransactionClient;
+
+  /**
+   * Create a new ConversionRepository
+   * 
+   * @param transactionClient - Optional Prisma transaction client. If provided,
+   *                            all operations use this transaction. Otherwise,
+   *                            operations use the global prisma instance.
+   */
+  constructor(transactionClient?: TransactionClient) {
+    this.db = transactionClient || prisma;
+  }
   /**
    * Create a new conversion record
    * 
@@ -23,7 +46,7 @@ export class ConversionRepository {
     processedContentType: string;
     originalContentType: string;
   }): Promise<Conversion> {
-    return await prisma.conversion.create({
+    return await this.db.conversion.create({
       data,
     });
   }
@@ -35,7 +58,7 @@ export class ConversionRepository {
    * @returns Conversion record or null if not found
    */
   async findById(id: string): Promise<Conversion | null> {
-    return await prisma.conversion.findUnique({
+    return await this.db.conversion.findUnique({
       where: { id },
     });
   }
@@ -47,7 +70,7 @@ export class ConversionRepository {
    * @returns Array of conversion records
    */
   async findByUserId(userId: string): Promise<Conversion[]> {
-    return await prisma.conversion.findMany({
+    return await this.db.conversion.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
     });
@@ -60,7 +83,7 @@ export class ConversionRepository {
    * @throws If conversion not found
    */
   async deleteById(id: string): Promise<void> {
-    await prisma.conversion.delete({
+    await this.db.conversion.delete({
       where: { id },
     });
   }
@@ -75,7 +98,7 @@ export class ConversionRepository {
    * @returns Number of conversions reassigned
    */
   async reassignUser(fromUserId: string, toUserId: string): Promise<number> {
-    const result = await prisma.conversion.updateMany({
+    const result = await this.db.conversion.updateMany({
       where: { userId: fromUserId },
       data: { userId: toUserId },
     });
@@ -83,3 +106,8 @@ export class ConversionRepository {
     return result.count;
   }
 }
+
+/**
+ * Module-level singleton instance for use across the application
+ */
+export const conversionRepository = new ConversionRepository();

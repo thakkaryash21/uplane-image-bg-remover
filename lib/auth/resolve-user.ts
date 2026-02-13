@@ -1,6 +1,7 @@
 import { auth } from '@/auth';
 import type { NextRequest } from 'next/server';
 import { readGuestCookie } from './guest';
+import { mergeGuestUser } from './merge-guest';
 
 /**
  * User resolution result
@@ -8,42 +9,49 @@ import { readGuestCookie } from './guest';
 export interface ResolvedUser {
   userId: string;
   isGuest: boolean;
-  guestUserId?: string; // Present if authenticated user also has a guest cookie (merge needed)
+  shouldClearGuestCookie: boolean;
 }
 
 /**
  * Resolve the current user from NextAuth session or guest cookie
  * 
- * This utility checks authentication state in the following order:
+ * This utility checks authentication state and handles guest-to-authenticated
+ * merging transparently. The merge happens automatically when both a NextAuth
+ * session and guest cookie exist (which occurs after explicit sign-in).
+ * 
+ * Resolution order:
  * 1. NextAuth session (authenticated user)
+ *    - If guest cookie also exists: trigger merge, return authenticated user, signal cookie clear
+ *    - If no guest cookie: return authenticated user
  * 2. Guest cookie (anonymous user)
  * 3. No authentication (null)
  * 
- * If both a session AND a guest cookie exist, it returns the authenticated
- * user ID along with the guest user ID in `guestUserId` field. The caller
- * should trigger a merge operation.
+ * Callers receive a clean ResolvedUser without needing to know about merge mechanics.
  * 
  * @param request - Next.js request object
- * @returns Resolved user info or null if unauthenticated
+ * @returns Resolved user info with cookie clear signal, or null if unauthenticated
  */
 export async function resolveUser(request: NextRequest): Promise<ResolvedUser | null> {
-  // Check for NextAuth session
   const session = await auth();
   const guestUserId = await readGuestCookie(request);
   
   if (session?.user?.id) {
     // Authenticated user - check if they also have a guest cookie (merge case)
     if (guestUserId) {
+      // Merge guest data into authenticated user transparently
+      await mergeGuestUser(guestUserId, session.user.id);
+      
       return {
         userId: session.user.id,
         isGuest: false,
-        guestUserId, // Signal that merge is needed
+        shouldClearGuestCookie: true, // Signal to caller that cookie should be cleared
       };
     }
     
     return {
       userId: session.user.id,
       isGuest: false,
+      shouldClearGuestCookie: false,
     };
   }
   
@@ -52,6 +60,7 @@ export async function resolveUser(request: NextRequest): Promise<ResolvedUser | 
     return {
       userId: guestUserId,
       isGuest: true,
+      shouldClearGuestCookie: false,
     };
   }
   

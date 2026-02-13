@@ -1,18 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { randomUUID } from 'crypto';
+import { NextRequest } from 'next/server';
 import { validateImageFile } from '@/lib/utils/validation';
 import { successResponse, errorResponse } from '@/lib/utils/api-response';
 import { ImageProcessingPipeline } from '@/lib/pipeline/image-processing-pipeline';
 import { BackgroundRemovalStep } from '@/lib/pipeline/steps/background-removal.step';
 import { HorizontalFlipStep } from '@/lib/pipeline/steps/horizontal-flip.step';
-import { VercelBlobStorageService } from '@/lib/services/storage/vercel-blob.service';
-import { ConversionRepository } from '@/lib/services/conversion.repository';
+import { blobStorageService } from '@/lib/services/storage/vercel-blob.service';
+import { BlobStorageError } from '@/lib/services/storage/blob-storage-error';
+import { conversionRepository } from '@/lib/services/conversion.repository';
 import { PipelineStepError } from '@/lib/pipeline/pipeline-step-error';
 import { resolveUser } from '@/lib/auth/resolve-user';
-import { createGuestCookie, setGuestCookie } from '@/lib/auth/guest';
-import { mergeGuestUser } from '@/lib/auth/merge-guest';
+import { createGuestUser, setGuestCookie, clearGuestCookie } from '@/lib/auth/guest';
 import { toProcessedImage } from '@/lib/types/image';
-import { prisma } from '@/lib/prisma';
 
 /**
  * POST /api/upload
@@ -24,47 +22,34 @@ import { prisma } from '@/lib/prisma';
  * - Authenticated users: Use NextAuth session userId
  * - Guest users: Use guest cookie userId
  * - New users: Create guest user in DB and set guest cookie
- * - Guest upgrading to authenticated: Trigger merge on first authenticated request
+ * - Guest upgrading to authenticated: Merge happens automatically in resolveUser
  * 
  * Flow:
- * 1. Resolve user (auth session, guest cookie, or create new guest)
- * 2. If both session + guest cookie exist, trigger merge
+ * 1. Resolve user (handles merge transparently if both session + guest cookie exist)
+ * 2. If no user, create new guest user
  * 3. Validate uploaded file (type, size)
  * 4. Store original image in Vercel Blob
  * 5. Run processing pipeline (remove background -> flip horizontally)
  * 6. Store processed image in Vercel Blob
  * 7. Create Conversion record in DB with both blob URLs
  * 8. Return image metadata with proxy URLs (processed + original)
+ * 9. Clear guest cookie if merge happened, or set guest cookie if new guest created
  */
 export async function POST(request: NextRequest) {
   try {
-    // Resolve user authentication
+    // Resolve user (handles merge transparently)
     let user = await resolveUser(request);
     let newGuestToken: string | null = null;
     
-    // Handle merge if authenticated user has a guest cookie
-    if (user?.guestUserId) {
-      await mergeGuestUser(user.guestUserId, user.userId);
-      // After merge, user is just the authenticated user (no guest cookie needed)
-      user = { userId: user.userId, isGuest: false };
-    }
-    
     // If no user at all, create a new guest user
     if (!user) {
-      const guestUserId = randomUUID();
-      
-      // Create guest user in database
-      await prisma.user.create({
-        data: {
-          id: guestUserId,
-          isGuest: true,
-        },
-      });
-      
-      // Generate guest cookie token
-      newGuestToken = await createGuestCookie(guestUserId);
-      
-      user = { userId: guestUserId, isGuest: true };
+      const guest = await createGuestUser();
+      newGuestToken = guest.token;
+      user = { 
+        userId: guest.userId, 
+        isGuest: true,
+        shouldClearGuestCookie: false 
+      };
     }
     
     // Parse multipart form data
@@ -93,40 +78,36 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const imageBuffer = Buffer.from(arrayBuffer);
 
-    // Generate UUID for this conversion (shared between original and processed images)
+    // Generate UUID for this conversion
+    const { randomUUID } = await import('crypto');
     const conversionId = randomUUID();
-    const blobService = new VercelBlobStorageService();
     const cleanFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
 
     // Store original image in blob storage (before processing)
     const originalBlobPath = `originals/${conversionId}/${cleanFilename}`;
-    const { url: originalBlobUrl } = await blobService.upload(
+    const { url: originalBlobUrl } = await blobStorageService.upload(
       imageBuffer,
       originalBlobPath,
       file.type
     );
 
-    // Initialize processing pipeline
+    // Initialize and execute processing pipeline
     const pipeline = new ImageProcessingPipeline([
       new BackgroundRemovalStep(),
       new HorizontalFlipStep(),
     ]);
-
-    // Execute pipeline
     const processedBuffer = await pipeline.execute(imageBuffer);
 
     // Store processed image in blob storage
     const processedBlobPath = `images/${conversionId}/${cleanFilename}.png`;
-    
-    const { url: processedBlobUrl, size } = await blobService.upload(
+    const { url: processedBlobUrl, size } = await blobStorageService.upload(
       processedBuffer,
       processedBlobPath,
       'image/png'
     );
 
     // Create conversion record in database
-    const conversionRepo = new ConversionRepository();
-    const conversion = await conversionRepo.create({
+    const conversion = await conversionRepository.create({
       userId: user.userId,
       processedBlobUrl,
       originalBlobUrl,
@@ -140,8 +121,12 @@ export async function POST(request: NextRequest) {
     const processedImage = toProcessedImage(conversion);
     const response = successResponse(processedImage, 201);
 
-    // If a new guest was created, set the guest cookie
-    if (newGuestToken) {
+    // Handle cookie management
+    if (user.shouldClearGuestCookie) {
+      // Merge happened - clear guest cookie
+      clearGuestCookie(response);
+    } else if (newGuestToken) {
+      // New guest was created - set guest cookie
       setGuestCookie(response, newGuestToken);
     }
 
@@ -156,10 +141,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Handle storage errors
-    if (error instanceof Error && error.message.includes('storage')) {
+    // Handle blob storage errors
+    if (error instanceof BlobStorageError) {
       return errorResponse(
-        'Failed to store processed image',
+        'Failed to store image',
         'STORAGE_ERROR',
         500
       );
