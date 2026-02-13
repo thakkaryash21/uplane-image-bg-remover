@@ -1,36 +1,197 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Image Background Remover
+
+A full-stack image processing application that removes backgrounds and flips images horizontally. Built for the **Uplane hiring process**.
+
+---
+
+<p align="center">
+  <img src="./screenshot.png" alt="App screenshot" width="800" />
+</p>
+
+<!-- Add your screenshot above — place screenshot.png in the project root -->
+
+---
+
+## What It Does
+
+- **Upload** an image (drag-and-drop or click)
+- **Process** via Remove.bg (background removal) + Sharp (horizontal flip)
+- **Host** processed images on Vercel Blob, served through authenticated proxy
+- **Manage** conversions: view before/after, rename, download, delete
+
+All core requirements from the task spec are met and extended with authentication, a database, and a more complete product flow.
+
+---
+
+## Evaluation Criteria
+
+### User Experience & Design
+
+- **Intuitive interface** — Drag-and-drop primary path, clear hierarchy, accessible controls (keyboard, ARIA labels)
+- **Clear feedback** — Loading spinner with ScannerPreview during processing; error alerts with retry; invalid-file modal with supported formats
+- **Polished feel** — Dark mode, responsive layout (desktop sidebar / mobile drawer), before-after comparison with transparency checkerboard, inline rename, tooltips for long filenames
+
+### Backend Engineering
+
+- **API structure** — RESTful routes with consistent envelope (`{ success, data }` or `{ success: false, error: { message, code } }`), appropriate HTTP status codes, and structured error handling
+- **Process management** — Pipeline pattern (format normalization → background removal → horizontal flip); each step self-contained with its own retries and error mapping
+- **Code quality** — TypeScript strict mode, interfaces for pipeline steps and storage, modular layout (pipeline, auth, storage, repository), API keys only in env vars
+
+---
+
+## Tech Stack
+
+| Layer              | Choice                  | Reason                                                            |
+| ------------------ | ----------------------- | ----------------------------------------------------------------- |
+| Framework          | Next.js 16 (App Router) | Single codebase for UI and API, easy Vercel deploy, no CORS setup |
+| Language           | TypeScript              | Type safety, strict mode                                          |
+| Database           | Neon Postgres (Vercel)  | Serverless PostgreSQL, branching, connection pooling for edge     |
+| ORM                | Prisma 5                | Type-safe queries, schema-first migrations                        |
+| Auth               | NextAuth v5 (Auth.js)   | Google OAuth, JWT sessions, Prisma adapter                        |
+| Storage            | Vercel Blob             | Integrated with Next.js, serverless-friendly                      |
+| Background Removal | Remove.bg API           | Free tier (50 calls/month)                                        |
+| Image Ops          | Sharp                   | Local transformations (format, flip)                              |
+| Styling            | Tailwind CSS            | Fast styling, dark mode via `dark:`                               |
+
+---
+
+## Backend Architecture
+
+```mermaid
+flowchart TB
+    subgraph API [API Route]
+        Resolve[resolveUser]
+        Validate[validateImageFile]
+    end
+
+    subgraph Processing [Upload Flow]
+        StoreOrig[Blob: upload original]
+        FormatNorm[FormatNormalization]
+        BgRemoval[BackgroundRemoval]
+        Flip[HorizontalFlip]
+        StoreProc[Blob: upload processed]
+    end
+
+    subgraph Persistence [Persistence]
+        Repo[ConversionRepository]
+        DB[(Neon Postgres)]
+    end
+
+    Request[Client Request] --> Resolve
+    Resolve --> Validate
+    Validate --> StoreOrig
+    StoreOrig --> FormatNorm --> BgRemoval --> Flip --> StoreProc
+    StoreProc --> Repo
+    Repo --> DB
+    Repo --> Response[Return proxy URLs]
+```
+
+---
+
+## Architecture & Design Decisions
+
+### Product Decisions
+
+- **Authentication** — Data ownership; blob URLs never exposed; images served via authenticated proxy only.
+
+- **Guest mode** — Low-friction: upload without sign-in; auto-merge into OAuth account when they sign in later.
+
+- **Database (Neon)** — Metadata and user linkage live in DB; blob storage is pure file ops; enables queries without scanning blobs.
+
+### Backend Design (Scalability & Clean Architecture)
+
+- **Pipeline pattern** — `ImageProcessingPipeline` + `IImageProcessingStep` interface. Add new steps without touching the pipeline or route; each step self-contained with retries and error mapping. Open/Closed Principle.
+- **Custom errors** — `PipelineStepError` (stepName, code, statusCode) for pipeline failures; `BlobStorageError` (operation) for storage. Route catches by type, maps to HTTP; no string matching.
+- **DRY helpers** — `authorizeConversionAccess()` for auth + ownership across 4 routes; `serveImageProxy()` shared config for processed vs original.
+- **Repository pattern** — `ConversionRepository` centralizes DB ops; supports transaction client for atomic guest merge.
+- **Interface segregation** — `IBlobStorageService`, `IImageProcessingStep`; swap implementations without changing consumers.
+- **Single UUID** — Conversion ID used for blob paths and DB record; one ID, consistency.
+- **Constants** — `image-formats.ts` (MIME types, size, UI labels); one source for validation, hooks, dropzone.
+- **Prisma singleton** — Prevents connection exhaustion under Next.js hot reload.
+
+### Frontend Design
+
+- **Custom hooks** — `useUpload`, `useConversions`, `useConversion`, `useDeleteConfirmation`, `useWindowDragDrop`; no global state lib.
+- **Icon components** — Shared `IconUpload`, `IconTrash`, etc.; no duplicated SVGs.
+- **Reusable primitives** — `Modal`, `ConfirmationModal`, `Button`, `Card`, `Spinner`, `Alert`, `TransparencyBackground`.
+- **Type safety** — `ApiResponse<T>` discriminated union; `ProcessedImage`; `ValidationResult`.
+
+---
+
+## Project Structure
+
+```
+app/
+  page.tsx, layout.tsx, providers.tsx
+  api/
+    auth/[...nextauth]/     # NextAuth (Google OAuth)
+    upload/                 # POST — upload, process, store
+    images/                 # GET — list conversions
+    images/[id]/             # GET/PATCH/DELETE — metadata, rename, delete
+    images/[id]/processed/   # GET — processed image (auth proxy)
+    images/[id]/original/   # GET — original image (auth proxy)
+
+components/
+  app-shell, header, sidebar
+  image-dropzone, scanner-preview
+  conversion-result, conversion-list-item
+  modal, confirmation-modal, login-prompt, login-modal
+  transparency-background, alert, button, card, spinner
+  icons/
+
+lib/
+  pipeline/          # pipeline, steps, custom errors
+  auth/              # guest, resolve-user, merge-guest
+  services/          # conversion.repository, storage
+  utils/             # validation, api-response, image-proxy
+  hooks/
+  constants/, types/
+  prisma.ts
+
+auth.ts, proxy.ts
+prisma/
+```
+
+---
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- Node.js 18+
+- npm or pnpm
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Clone and install: `npm install`
+2. Create `.env.local` with:
+   - `REMOVEBG_API_KEY` — [Remove.bg API key](https://www.remove.bg/api)
+   - `BLOB_READ_WRITE_TOKEN` — From Vercel Blob
+   - `DATABASE_URL` — Neon Postgres (or other PostgreSQL)
+   - `DIRECT_DATABASE_URL` — Direct connection for Prisma migrations
+   - `AUTH_SECRET` — NextAuth signing secret
+   - `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` — For Google OAuth (optional; guest works without it)
+3. Migrate: `npx prisma migrate deploy`
+4. Run: `npm run dev`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Scripts
 
-## Learn More
+- `npm run dev` — Development server
+- `npm run build` — Production build
+- `npm run start` — Start production server
+- `npm run lint` — ESLint
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Supported Formats
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+PNG, JPEG, WebP, GIF, AVIF, TIFF, SVG, HEIC. Max 20MB. Images are normalized to PNG before background removal.
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Security Notes
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Blob URLs are never sent to the client; images are always served via authenticated proxy routes.
+- Guest cookies are signed JWTs (`httpOnly`, `secure` in prod).
+- API keys and secrets are only used server-side.
+- Ownership is enforced on all image operations.
