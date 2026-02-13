@@ -3,6 +3,7 @@
 import { useRef, useState, DragEvent } from "react";
 import Alert from "./alert";
 import Spinner from "./spinner";
+import ScannerPreview from "./scanner-preview";
 import {
   ALLOWED_IMAGE_ACCEPT,
   ALLOWED_IMAGE_LABEL,
@@ -11,6 +12,7 @@ import {
 
 interface ImageDropzoneProps {
   isUploading: boolean;
+  uploadingFile?: File | null;
   error?: string | null;
   onFileSelect: (file: File) => Promise<void>;
   onRetry: () => void;
@@ -27,6 +29,7 @@ interface ImageDropzoneProps {
  */
 export default function ImageDropzone({
   isUploading,
+  uploadingFile,
   error,
   onFileSelect,
   onRetry,
@@ -99,7 +102,11 @@ export default function ImageDropzone({
       >
         {isUploading ? (
           <div className="flex flex-col items-center gap-4 py-12">
-            <Spinner size="lg" />
+            {uploadingFile ? (
+              <ScannerPreview file={uploadingFile} />
+            ) : (
+              <Spinner size="lg" />
+            )}
             <div className="text-center">
               <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
                 Processing your image...

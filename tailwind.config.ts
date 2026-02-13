@@ -7,6 +7,19 @@ const config: Config = {
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
+  theme: {
+    extend: {
+      keyframes: {
+        scan: {
+          "0%": { left: "-100%" },
+          "100%": { left: "100%" },
+        },
+      },
+      animation: {
+        scan: "scan 2s linear infinite",
+      },
+    },
+  },
 };
 
 export default config;

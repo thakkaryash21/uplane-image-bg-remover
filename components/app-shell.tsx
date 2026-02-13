@@ -24,6 +24,7 @@ export default function AppShell() {
   const [selectedConversionId, setSelectedConversionId] = useState<
     string | null
   >(null);
+  const [uploadingFile, setUploadingFile] = useState<File | null>(null);
   // isDraggingOverWindow is now handled by the hook
   const [showInvalidFileModal, setShowInvalidFileModal] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -48,6 +49,8 @@ export default function AppShell() {
       setSelectedConversionId(null);
     }
 
+    setUploadingFile(file);
+
     try {
       const result = await upload(file);
       handleUploadComplete(result.id);
@@ -63,6 +66,8 @@ export default function AppShell() {
         setShowInvalidFileModal(true);
       }
       // userUpload hook handles the error state for the UI
+    } finally {
+      setUploadingFile(null);
     }
   };
 
@@ -126,6 +131,7 @@ export default function AppShell() {
             ) : (
               <ImageDropzone
                 isUploading={isUploading}
+                uploadingFile={uploadingFile}
                 error={uploadError}
                 onFileSelect={handleFileSelect}
                 onRetry={resetUpload}
