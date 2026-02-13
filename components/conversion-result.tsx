@@ -73,24 +73,6 @@ export default function ConversionResult({
     }
   };
 
-  const handleDeleteClick = () => {
-    setShowDeleteModal(true);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!conversion) return;
-
-    setIsDeleting(true);
-    try {
-      await onDelete(conversion.id);
-      setShowDeleteModal(false);
-      onNewConversion(); // Navigate back to upload view
-    } catch (err) {
-      alert("Failed to delete conversion");
-      setIsDeleting(false);
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
