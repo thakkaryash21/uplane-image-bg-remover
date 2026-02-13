@@ -12,6 +12,7 @@
     --color-primary-700: #0369a1;
     --color-primary-800: #075985;
     --color-primary-900: #0c4a6e;
+    --color-primary-950: #082f49;
 
     /* Success colors */
     --color-success-50: #f0fdf4;
@@ -121,10 +122,101 @@
     .alert-info {
         @apply bg-primary-50 dark:bg-sky-950 border border-primary-200 dark:border-sky-600 text-primary-700 dark:text-sky-400 px-4 py-3 rounded-lg;
     }
+
+    /* Sidebar Styles */
+    .sidebar {
+        @apply bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 overflow-y-auto transition-transform duration-300 ease-in-out;
+    }
+
+    .sidebar-overlay {
+        @apply fixed inset-0 bg-black/50 z-30 transition-opacity duration-300 md:hidden;
+    }
+
+    /* Image Dropzone Styles */
+    .dropzone {
+        @apply border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-6 md:p-12 text-center cursor-pointer transition-all duration-200 hover:border-primary-400 dark:hover:border-primary-500 hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:ring-offset-2 dark:focus:ring-offset-gray-950;
+    }
+
+    .dropzone-active {
+        @apply border-primary-500 dark:border-primary-400 bg-primary-50 dark:bg-primary-950 scale-105;
+    }
+
+    /* Full-page Drag Overlay */
+    .drag-overlay {
+        @apply fixed inset-0 bg-primary-600/90 dark:bg-primary-700/90 z-50 flex items-center justify-center backdrop-blur-sm;
+    }
+
+    /* Modal Styles */
+    .modal-backdrop {
+        @apply fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm;
+    }
+
+    .modal-content {
+        @apply bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full mx-4 md:mx-auto p-8 border border-gray-200 dark:border-gray-800;
+    }
+
+    /* Google Sign-in Button */
+    .btn-google {
+        @apply bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-6 py-3 rounded-lg font-medium border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:ring-offset-2 dark:focus:ring-offset-gray-950 inline-flex items-center justify-center gap-3 w-full;
+    }
+
+    /* Thumbnail Image */
+    .thumbnail {
+        @apply w-10 h-10 rounded-lg object-cover border border-gray-200 dark:border-gray-700;
+    }
+
+    /* Glass Header */
+    .glass-header {
+        @apply sticky top-0 z-20 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800;
+    }
+
+    /* Conversion List Item */
+    .conversion-item {
+        @apply flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200 cursor-pointer min-h-[48px];
+    }
+
+    .conversion-item-active {
+        @apply bg-primary-50 dark:bg-primary-950 border-l-4 border-primary-600 dark:border-primary-400;
+    }
+
+    /* Login Prompt Glow */
+    .login-prompt-glow {
+        @apply animate-pulse shadow-lg shadow-primary-500/50 dark:shadow-primary-400/50;
+    }
 }
 
 @layer utilities {
     .text-balance {
         text-wrap: balance;
+    }
+
+    .animate-fade-in {
+        animation: fadeIn 0.2s ease-in-out;
+    }
+
+    .animate-slide-up {
+        animation: slideUp 0.3s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 }
