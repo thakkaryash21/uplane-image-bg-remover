@@ -58,7 +58,7 @@ export default function ConversionListItem({
       {/* Thumbnail */}
       <img
         src={conversion.originalUrl}
-        alt={conversion.originalName}
+        alt={conversion.name}
         className="thumbnail"
         loading="lazy"
       />
@@ -66,7 +66,7 @@ export default function ConversionListItem({
       {/* Content */}
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-          {conversion.originalName}
+          {conversion.name}
         </p>
         <p className="text-xs text-gray-500 dark:text-gray-400">
           {relativeTime}

@@ -34,14 +34,14 @@ export class ConversionRepository {
   /**
    * Create a new conversion record
    * 
-   * @param data - Conversion data (userId, processedBlobUrl, originalBlobUrl, originalName, size, processedContentType, originalContentType)
+   * @param data - Conversion data (userId, processedBlobUrl, originalBlobUrl, name, size, processedContentType, originalContentType)
    * @returns Created conversion record
    */
   async create(data: {
     userId: string;
     processedBlobUrl: string;
     originalBlobUrl: string;
-    originalName: string;
+    name: string;
     size: number;
     processedContentType: string;
     originalContentType: string;
@@ -73,6 +73,20 @@ export class ConversionRepository {
     return await this.db.conversion.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * Update the display name of a conversion
+   *
+   * @param id - Conversion UUID
+   * @param name - New display name (full filename with extension)
+   * @returns Updated conversion record
+   */
+  async updateName(id: string, name: string): Promise<Conversion> {
+    return await this.db.conversion.update({
+      where: { id },
+      data: { name },
     });
   }
 

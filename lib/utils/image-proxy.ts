@@ -63,7 +63,7 @@ export async function serveImageProxy(
         // Cache locally but not on CDN (private content)
         "Cache-Control": "private, max-age=3600",
         // Optional: Add filename for downloads
-        "Content-Disposition": `inline; filename="${authResult.conversion.originalName}"`,
+        "Content-Disposition": `inline; filename="${authResult.conversion.name}"`,
       },
     });
 

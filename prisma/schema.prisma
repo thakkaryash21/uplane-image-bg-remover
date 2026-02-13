@@ -66,7 +66,7 @@ model Conversion {
   userId               String
   processedBlobUrl     String
   originalBlobUrl      String
-  originalName         String
+  name                 String
   size                 Int
   processedContentType String
   originalContentType  String

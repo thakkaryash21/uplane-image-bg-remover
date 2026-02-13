@@ -11,8 +11,8 @@ export interface ProcessedImage {
   url: string;
   /** Proxy URL to access the original image (e.g., /api/images/{id}/original) */
   originalUrl: string;
-  /** Original filename from upload */
-  originalName: string;
+  /** Display name (filename) for the conversion */
+  name: string;
   /** File size in bytes */
   size: number;
   /** ISO 8601 timestamp of when the image was created */
@@ -32,7 +32,7 @@ export function toProcessedImage(conversion: Conversion): ProcessedImage {
     id: conversion.id,
     url: `/api/images/${conversion.id}/processed`,
     originalUrl: `/api/images/${conversion.id}/original`,
-    originalName: conversion.originalName,
+    name: conversion.name,
     size: conversion.size,
     createdAt: conversion.createdAt.toISOString(),
   };

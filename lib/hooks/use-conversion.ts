@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { ProcessedImage } from "@/lib/types/image";
 import type { ApiResponse } from "@/lib/types/api";
 
@@ -6,6 +6,8 @@ interface UseConversionResult {
   conversion: ProcessedImage | null;
   isLoading: boolean;
   error: string | null;
+  refetch: () => Promise<void>;
+  rename: (newName: string) => Promise<void>;
 }
 
 export function useConversion(id: string): UseConversionResult {
@@ -13,36 +15,48 @@ export function useConversion(id: string): UseConversionResult {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function fetchConversion() {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const response = await fetch(`/api/images/${id}`);
-
-        if (!response.ok) {
-          throw new Error("Failed to load conversion");
-        }
-
-        const data: ApiResponse<ProcessedImage> = await response.json();
-
-        if (data.success) {
-          setConversion(data.data);
-        } else {
-          setError(data.error.message);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred");
-      } finally {
-        setIsLoading(false);
+  const fetchConversion = useCallback(async () => {
+    if (!id) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/images/${id}`);
+      if (!response.ok) throw new Error("Failed to load conversion");
+      const data: ApiResponse<ProcessedImage> = await response.json();
+      if (data.success) {
+        setConversion(data.data);
+      } else {
+        setError(data.error.message);
       }
-    }
-
-    if (id) {
-      fetchConversion();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setIsLoading(false);
     }
   }, [id]);
 
-  return { conversion, isLoading, error };
+  useEffect(() => {
+    fetchConversion();
+  }, [fetchConversion]);
+
+  const rename = useCallback(
+    async (newName: string) => {
+      if (!id) return;
+      const response = await fetch(`/api/images/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newName }),
+      });
+      if (!response.ok) {
+        const data: ApiResponse<never> = await response.json();
+        throw new Error(
+          data.success === false ? data.error.message : "Failed to rename"
+        );
+      }
+      await fetchConversion();
+    },
+    [id, fetchConversion]
+  );
+
+  return { conversion, isLoading, error, refetch: fetchConversion, rename };
 }

@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
       userId: user.userId,
       processedBlobUrl,
       originalBlobUrl,
-      originalName: file.name,
+      name: file.name,
       size,
       processedContentType: 'image/png',
       originalContentType: file.type,

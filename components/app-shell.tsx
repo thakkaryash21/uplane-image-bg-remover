@@ -127,6 +127,7 @@ export default function AppShell() {
                 conversionId={selectedConversionId}
                 onDeleteClick={() => requestDelete(selectedConversionId)}
                 onNewConversion={handleNewConversion}
+                onRenameSuccess={refetch}
               />
             ) : (
               <ImageDropzone

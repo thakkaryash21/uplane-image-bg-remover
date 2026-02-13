@@ -1,7 +1,8 @@
 "use client";
 
+import { useState, useRef, useEffect } from "react";
 import { useConversion } from "@/lib/hooks/use-conversion";
-import { formatFileSize } from "@/lib/utils/format";
+import { formatFileSize, getBaseName, getExtension } from "@/lib/utils/format";
 import TransparencyBackground from "./transparency-background";
 import Button from "./button";
 import Card from "./card";
@@ -11,6 +12,7 @@ interface ConversionResultProps {
   conversionId: string;
   onDeleteClick: (id: string) => void;
   onNewConversion: () => void;
+  onRenameSuccess?: () => void;
 }
 
 /**
@@ -21,8 +23,55 @@ export default function ConversionResult({
   conversionId,
   onDeleteClick,
   onNewConversion,
+  onRenameSuccess,
 }: ConversionResultProps) {
-  const { conversion, isLoading, error } = useConversion(conversionId);
+  const { conversion, isLoading, error, rename } = useConversion(conversionId);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  const handleSaveRename = async () => {
+    if (!conversion) return;
+    const baseName = getBaseName(editValue.trim()).trim();
+    if (!baseName) {
+      setIsEditing(false);
+      setEditValue("");
+      return;
+    }
+    const ext = getExtension(conversion.name);
+    const fullName = baseName + ext;
+    if (fullName === conversion.name) {
+      setIsEditing(false);
+      setEditValue("");
+      return;
+    }
+    try {
+      await rename(fullName);
+      setIsEditing(false);
+      setEditValue("");
+      onRenameSuccess?.();
+    } catch {
+      /* keep edit mode on error */
+    }
+  };
+
+  const handleCancelRename = () => {
+    setIsEditing(false);
+    setEditValue("");
+  };
+
+  const handleDoubleClick = () => {
+    if (!conversion) return;
+    setEditValue(getBaseName(conversion.name));
+    setIsEditing(true);
+  };
 
   const handleDownload = async () => {
     if (!conversion) return;
@@ -33,7 +82,7 @@ export default function ConversionResult({
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `processed_${conversion.originalName}`;
+      a.download = `processed_${conversion.name}`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -69,13 +118,32 @@ export default function ConversionResult({
   return (
     <div className="space-y-6">
       {/* Metadata */}
-      {/* Metadata */}
       <Card className="!p-4">
         <div className="flex flex-row items-center justify-between gap-2">
-          <div className="min-w-0">
-            <h3 className="font-medium text-gray-900 dark:text-gray-100 truncate">
-              {conversion.originalName}
-            </h3>
+          <div className="min-w-0 flex-1">
+            {isEditing ? (
+              <input
+                ref={inputRef}
+                type="text"
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                onBlur={handleSaveRename}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSaveRename();
+                  if (e.key === "Escape") handleCancelRename();
+                }}
+                style={{ width: `${Math.max(editValue.length, 1) + 1}ch` }}
+                className="font-medium text-gray-900 dark:text-gray-100 bg-transparent border-b border-gray-300 dark:border-gray-600 outline-none py-0.5 min-w-0 max-w-full block"
+              />
+            ) : (
+              <h3
+                onDoubleClick={handleDoubleClick}
+                className="font-medium text-gray-900 dark:text-gray-100 truncate cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 rounded px-1 -mx-1 w-fit max-w-full"
+                title="Double-click to rename"
+              >
+                {conversion.name}
+              </h3>
+            )}
             <p className="text-sm text-gray-500 dark:text-gray-400">
               {formatFileSize(conversion.size)} •{" "}
               {new Date(conversion.createdAt).toLocaleDateString(undefined, {
