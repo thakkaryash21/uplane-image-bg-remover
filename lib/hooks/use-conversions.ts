@@ -12,7 +12,7 @@ interface UseConversionsResult {
 
 /**
  * Custom hook to manage image conversions
- * Fetches the list of conversions from GET /api/images
+ * Fetches the list of conversions from GET /api/conversions
  * Handles 401 gracefully (unauthenticated/guest with no uploads yet)
  */
 export function useConversions(): UseConversionsResult {
@@ -25,7 +25,7 @@ export function useConversions(): UseConversionsResult {
     setError(null);
 
     try {
-      const response = await fetch("/api/images");
+      const response = await fetch("/api/conversions");
 
       // Handle 401 - unauthenticated/guest user with no uploads yet
       // This is not an error state, just an empty list
@@ -56,7 +56,7 @@ export function useConversions(): UseConversionsResult {
   const deleteConversion = useCallback(
     async (id: string) => {
       try {
-        const response = await fetch(`/api/images/${id}`, {
+        const response = await fetch(`/api/conversions/${id}`, {
           method: "DELETE",
         });
 

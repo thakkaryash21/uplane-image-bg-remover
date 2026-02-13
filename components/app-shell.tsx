@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useConversions } from "@/lib/hooks/use-conversions";
 import { useUpload } from "@/lib/hooks/use-upload";
 import { useWindowDragDrop } from "@/lib/hooks/use-window-drag-drop";
@@ -72,8 +72,8 @@ export default function AppShell() {
     onInvalidType: () => setShowInvalidFileModal(true),
   });
 
-  const handleUploadComplete = (conversionId: string) => {
-    refetch(); // Refresh the conversions list
+  const handleUploadComplete = async (conversionId: string) => {
+    await refetch(); // Refresh the conversions list so the new conversion is available
     setSelectedConversionId(conversionId); // Show the newly uploaded conversion
   };
 
@@ -98,6 +98,14 @@ export default function AppShell() {
     resetUpload();
   };
 
+  const selectedConversion = useMemo(
+    () =>
+      selectedConversionId
+        ? conversions.find((c) => c.id === selectedConversionId) ?? null
+        : null,
+    [conversions, selectedConversionId]
+  );
+
   return (
     <div className="h-screen bg-gray-50 dark:bg-gray-950 flex flex-col overflow-hidden">
       {/* Header */}
@@ -120,7 +128,9 @@ export default function AppShell() {
           <div className="max-w-5xl mx-auto">
             {selectedConversionId ? (
               <ConversionResult
+                key={selectedConversionId}
                 conversionId={selectedConversionId}
+                conversion={selectedConversion}
                 onDeleteClick={() => requestDelete(selectedConversionId)}
                 onNewConversion={handleNewConversion}
                 onRenameSuccess={refetch}

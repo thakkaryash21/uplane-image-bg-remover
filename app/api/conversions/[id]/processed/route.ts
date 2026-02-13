@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { serveImageProxy } from '@/lib/utils/image-proxy';
 
 /**
- * GET /api/images/[id]/processed
+ * GET /api/conversions/[id]/processed
  *
  * Processed image proxy route - serves the processed image through authentication.
  *

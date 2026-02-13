@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useConversion } from "@/lib/hooks/use-conversion";
+import type { ProcessedImage } from "@/lib/types/image";
 import { formatFileSize, getBaseName, getExtension } from "@/lib/utils/format";
 import TransparencyBackground from "./transparency-background";
 import Button from "./button";
@@ -17,6 +18,8 @@ import {
 
 interface ConversionResultProps {
   conversionId: string;
+  /** When provided, skips the fetch - data comes from list or upload response */
+  conversion?: ProcessedImage | null;
   onDeleteClick: (id: string) => void;
   onNewConversion: () => void;
   onRenameSuccess?: () => void;
@@ -28,11 +31,15 @@ interface ConversionResultProps {
  */
 export default function ConversionResult({
   conversionId,
+  conversion: conversionProp,
   onDeleteClick,
   onNewConversion,
   onRenameSuccess,
 }: ConversionResultProps) {
-  const { conversion, isLoading, error, rename } = useConversion(conversionId);
+  const { conversion, isLoading, error, rename } = useConversion(
+    conversionId,
+    { initialData: conversionProp }
+  );
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState("");
   const [copied, setCopied] = useState(false);

@@ -2,6 +2,11 @@ import { useState, useEffect, useCallback } from "react";
 import type { ProcessedImage } from "@/lib/types/image";
 import type { ApiResponse } from "@/lib/types/api";
 
+interface UseConversionOptions {
+  /** When provided, skips the initial fetch and uses this data. Used when conversion is already available from list or upload. */
+  initialData?: ProcessedImage | null;
+}
+
 interface UseConversionResult {
   conversion: ProcessedImage | null;
   isLoading: boolean;
@@ -10,9 +15,15 @@ interface UseConversionResult {
   rename: (newName: string) => Promise<void>;
 }
 
-export function useConversion(id: string): UseConversionResult {
-  const [conversion, setConversion] = useState<ProcessedImage | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+export function useConversion(
+  id: string,
+  options?: UseConversionOptions
+): UseConversionResult {
+  const { initialData } = options ?? {};
+  const [conversion, setConversion] = useState<ProcessedImage | null>(
+    initialData ?? null
+  );
+  const [isLoading, setIsLoading] = useState(!initialData);
   const [error, setError] = useState<string | null>(null);
 
   const fetchConversion = useCallback(async () => {
@@ -20,7 +31,7 @@ export function useConversion(id: string): UseConversionResult {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/images/${id}`);
+      const response = await fetch(`/api/conversions/${id}`);
       if (!response.ok) throw new Error("Failed to load conversion");
       const data: ApiResponse<ProcessedImage> = await response.json();
       if (data.success) {
@@ -36,13 +47,18 @@ export function useConversion(id: string): UseConversionResult {
   }, [id]);
 
   useEffect(() => {
+    if (initialData && initialData.id === id) {
+      setConversion(initialData);
+      setIsLoading(false);
+      return;
+    }
     fetchConversion();
-  }, [fetchConversion]);
+  }, [id, initialData, fetchConversion]);
 
   const rename = useCallback(
     async (newName: string) => {
       if (!id) return;
-      const response = await fetch(`/api/images/${id}`, {
+      const response = await fetch(`/api/conversions/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newName }),

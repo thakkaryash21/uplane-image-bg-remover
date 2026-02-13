@@ -6,10 +6,10 @@ import { successResponse, errorResponse } from '@/lib/utils/api-response';
 import { clearGuestCookie } from '@/lib/auth/guest';
 
 /**
- * GET /api/images
+ * GET /api/conversions
  *
- * Retrieves all processed images for the authenticated user.
- * Returns an array of ProcessedImage metadata with proxy URLs.
+ * Retrieves all conversions for the authenticated user.
+ * Returns an array of ProcessedImage metadata with proxy URLs for original and processed images.
  *
  * Authentication required: User must be authenticated (session or guest cookie)
  */
@@ -41,9 +41,9 @@ export async function GET(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error('Error listing images:', error);
+    console.error('Error listing conversions:', error);
     return errorResponse(
-      'Failed to retrieve images',
+      'Failed to retrieve conversions',
       'LIST_ERROR',
       500
     );

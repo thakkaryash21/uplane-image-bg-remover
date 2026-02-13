@@ -6,13 +6,13 @@ import { authorizeConversionAccess, maybeClearGuestCookie } from '@/lib/utils/au
 import { toProcessedImage } from '@/lib/types/image';
 
 /**
- * GET /api/images/[id]
- * 
- * Retrieves metadata for a processed image by its ID.
- * Returns the proxy URL, original filename, size, and creation timestamp.
- * 
+ * GET /api/conversions/[id]
+ *
+ * Retrieves metadata for a conversion by its ID.
+ * Returns the proxy URLs, display name, size, and creation timestamp.
+ *
  * Authentication required: User must be authenticated (session or guest cookie)
- * Authorization: User must own the image (userId matches)
+ * Authorization: User must own the conversion (userId matches)
  */
 export async function GET(
   request: NextRequest,
@@ -20,24 +20,24 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    
+
     // Authorize access (handles user resolution, merge, ownership check)
     const authResult = await authorizeConversionAccess(request, id);
-    
+
     if (!authResult.authorized) {
       return authResult.response;
     }
 
-    // Return processed image metadata with proxy URL
+    // Return conversion metadata with proxy URLs
     const processedImage = toProcessedImage(authResult.conversion);
     const response = successResponse(processedImage);
-    
+
     // Clear guest cookie if merge happened
     return maybeClearGuestCookie(response, authResult.shouldClearGuestCookie);
   } catch (error) {
-    console.error('Error retrieving image:', error);
+    console.error('Error retrieving conversion:', error);
     return errorResponse(
-      'Failed to retrieve image',
+      'Failed to retrieve conversion',
       'RETRIEVAL_ERROR',
       500
     );
@@ -45,12 +45,12 @@ export async function GET(
 }
 
 /**
- * PATCH /api/images/[id]
+ * PATCH /api/conversions/[id]
  *
  * Updates the display name of a conversion.
  *
  * Authentication required: User must be authenticated (session or guest cookie)
- * Authorization: User must own the image (userId matches)
+ * Authorization: User must own the conversion (userId matches)
  */
 export async function PATCH(
   request: NextRequest,
@@ -87,19 +87,19 @@ export async function PATCH(
 
     return maybeClearGuestCookie(response, authResult.shouldClearGuestCookie);
   } catch (error) {
-    console.error('Error updating image name:', error);
-    return errorResponse('Failed to update image name', 'UPDATE_ERROR', 500);
+    console.error('Error updating conversion name:', error);
+    return errorResponse('Failed to update conversion name', 'UPDATE_ERROR', 500);
   }
 }
 
 /**
- * DELETE /api/images/[id]
- * 
+ * DELETE /api/conversions/[id]
+ *
  * Deletes both original and processed images and their metadata from blob storage and database.
- * Verifies the image exists and the user owns it before attempting deletion.
- * 
+ * Verifies the conversion exists and the user owns it before attempting deletion.
+ *
  * Authentication required: User must be authenticated (session or guest cookie)
- * Authorization: User must own the image (userId matches)
+ * Authorization: User must own the conversion (userId matches)
  */
 export async function DELETE(
   request: NextRequest,
@@ -107,10 +107,10 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    
+
     // Authorize access (handles user resolution, merge, ownership check)
     const authResult = await authorizeConversionAccess(request, id);
-    
+
     if (!authResult.authorized) {
       return authResult.response;
     }
@@ -123,16 +123,16 @@ export async function DELETE(
     await conversionRepository.deleteById(id);
 
     const response = successResponse({
-      message: 'Image deleted successfully',
+      message: 'Conversion deleted successfully',
       id,
     });
-    
+
     // Clear guest cookie if merge happened
     return maybeClearGuestCookie(response, authResult.shouldClearGuestCookie);
   } catch (error) {
-    console.error('Error deleting image:', error);
+    console.error('Error deleting conversion:', error);
     return errorResponse(
-      'Failed to delete image',
+      'Failed to delete conversion',
       'DELETION_ERROR',
       500
     );
