@@ -7,7 +7,13 @@ import TransparencyBackground from "./transparency-background";
 import Button from "./button";
 import Card from "./card";
 import Spinner from "./spinner";
-import { IconTrash, IconPlus, IconDownload, IconCopy } from "./icons";
+import {
+  IconTrash,
+  IconPlus,
+  IconDownload,
+  IconCopy,
+  IconCheck,
+} from "./icons";
 
 interface ConversionResultProps {
   conversionId: string;
@@ -29,6 +35,7 @@ export default function ConversionResult({
   const { conversion, isLoading, error, rename } = useConversion(conversionId);
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState("");
+  const [copied, setCopied] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -72,6 +79,19 @@ export default function ConversionResult({
     if (!conversion) return;
     setEditValue(getBaseName(conversion.name));
     setIsEditing(true);
+  };
+
+  const handleCopyUrl = async () => {
+    if (!conversion) return;
+    try {
+      await navigator.clipboard.writeText(
+        `${window.location.origin}${conversion.url}`,
+      );
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* clipboard API failed */
+    }
   };
 
   const handleDownload = async () => {
@@ -219,18 +239,22 @@ export default function ConversionResult({
             </code>
           </div>
           <button
-            onClick={() => {
-              navigator.clipboard.writeText(
-                `${window.location.origin}${conversion.url}`,
-              );
-            }}
-            className="px-4 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 border-l border-gray-200 dark:border-gray-700 transition-colors flex items-center justify-center shrink-0"
-            title="Copy URL"
+            onClick={handleCopyUrl}
+            className="px-4 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 border-l border-gray-200 dark:border-gray-700 transition-colors flex items-center justify-center shrink-0 disabled:cursor-default"
+            title={copied ? "Copied!" : "Copy URL"}
+            disabled={copied}
           >
-            <IconCopy
-              size="md"
-              className="text-gray-500 dark:text-gray-400"
-            />
+            {copied ? (
+              <IconCheck
+                size="md"
+                className="text-green-600 dark:text-green-400 shrink-0"
+              />
+            ) : (
+              <IconCopy
+                size="md"
+                className="text-gray-500 dark:text-gray-400"
+              />
+            )}
           </button>
         </div>
       </Card>
