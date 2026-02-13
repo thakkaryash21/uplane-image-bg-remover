@@ -5,10 +5,8 @@ A full-stack image processing application that removes backgrounds and flips ima
 ---
 
 <p align="center">
-  <img src="./screenshot.png" alt="App screenshot" width="800" />
+  <img src="./screenshots/screenshot.png" alt="App screenshot" width="800" />
 </p>
-
-<!-- Add your screenshot above — place screenshot.png in the project root -->
 
 ---
 
