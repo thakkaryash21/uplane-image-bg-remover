@@ -1,8 +1,10 @@
 # Image Background Remover
 
-A full-stack image processing application that removes backgrounds and flips images horizontally. Built for the **Uplane hiring process**.
-
----
+<p align="right">
+  <a href="https://uplane-image-bg-remover.vercel.app/">
+    <img src="https://img.shields.io/badge/Open_App-Open-blue?style=for-the-badge" alt="Open App" />
+  </a>
+</p>
 
 <p align="center">
   <img src="./screenshots/screenshot.png" alt="App screenshot" width="800" />
@@ -53,35 +55,93 @@ All core requirements from the task spec are met and extended with authenticatio
 
 ---
 
-## Backend Architecture
+## System Architecture
+
+The diagram below shows the complete system: frontend, API routes, authentication, processing pipeline, storage, and database. **All conversion endpoints connect to Neon Postgres** — the database stores metadata and ownership; Vercel Blob stores image bytes; image proxy routes serve blobs through authentication.
 
 ```mermaid
 flowchart TB
-    subgraph API [API Route]
-        Resolve[resolveUser]
-        Validate[validateImageFile]
+    subgraph Client [Frontend]
+        ReactApp[Next.js App Router]
+        useUpload[useUpload]
+        useConversions[useConversions]
+        ImageDropzone[ImageDropzone]
+        ConversionList[ConversionList]
     end
 
-    subgraph Processing [Upload Flow]
-        StoreOrig[Blob: upload original]
-        FormatNorm[FormatNormalization]
-        BgRemoval[BackgroundRemoval]
-        Flip[HorizontalFlip]
-        StoreProc[Blob: upload processed]
+    subgraph Auth [Auth Layer]
+        Resolve["resolveUser (incl. guest merge)"]
     end
 
-    subgraph Persistence [Persistence]
-        Repo[ConversionRepository]
-        DB[(Neon Postgres)]
+    subgraph Backend [Backend]
+        subgraph ApiRoutes [API Routes]
+            Upload[POST /api/upload]
+            List[GET /api/conversions]
+            GetId[GET /api/conversions/id]
+            PatchId[PATCH /api/conversions/id]
+            DeleteId[DELETE /api/conversions/id]
+            ProxyProc[GET /api/conversions/id/processed]
+            ProxyOrig[GET /api/conversions/id/original]
+        end
+
+        subgraph UploadFlow [Upload Pipeline]
+            Validate[validateImageFile]
+            BlobOrig[Vercel Blob: store original]
+            FormatNorm[FormatNormalization]
+            BgRemoval[Remove.bg API]
+            Flip[Sharp: HorizontalFlip]
+            BlobProc[Vercel Blob: store processed]
+        end
+
+        subgraph Persistence [Persistence]
+            Repo[ConversionRepository]
+        end
+
+        subgraph DataStore [Data Store]
+            NeonDB[(Neon Postgres)]
+            VercelBlob[(Vercel Blob)]
+        end
     end
 
-    Request[Client Request] --> Resolve
-    Resolve --> Validate
-    Validate --> StoreOrig
-    StoreOrig --> FormatNorm --> BgRemoval --> Flip --> StoreProc
-    StoreProc --> Repo
-    Repo --> DB
-    Repo --> Response[Return proxy URLs]
+    ReactApp --> useUpload
+    ReactApp --> useConversions
+    useUpload --> ImageDropzone
+    useConversions --> ConversionList
+
+    ImageDropzone --> Resolve
+    ConversionList --> Resolve
+
+    Resolve --> Upload
+    Resolve --> List
+    Resolve --> GetId
+    Resolve --> PatchId
+    Resolve --> DeleteId
+    Resolve --> ProxyProc
+    Resolve --> ProxyOrig
+
+    Upload --> Validate
+    Validate --> BlobOrig
+    BlobOrig --> FormatNorm
+    FormatNorm --> BgRemoval
+    BgRemoval --> Flip
+    Flip --> BlobProc
+
+    BlobOrig --> VercelBlob
+    BlobProc --> VercelBlob
+
+    Upload -->|"create"| Repo
+    List -->|"findByUserId"| Repo
+    GetId -->|"findById"| Repo
+    PatchId -->|"updateName"| Repo
+    DeleteId -->|"deleteById + blob delete"| Repo
+    ProxyProc -->|"findById for blobUrl"| Repo
+    ProxyOrig -->|"findById for blobUrl"| Repo
+
+    Repo --> NeonDB
+    DeleteId --> VercelBlob
+
+    ProxyProc -->|"fetch bytes"| VercelBlob
+    ProxyOrig -->|"fetch bytes"| VercelBlob
 ```
 
 ---
@@ -124,10 +184,10 @@ app/
   api/
     auth/[...nextauth]/     # NextAuth (Google OAuth)
     upload/                 # POST — upload, process, store
-    images/                 # GET — list conversions
-    images/[id]/             # GET/PATCH/DELETE — metadata, rename, delete
-    images/[id]/processed/   # GET — processed image (auth proxy)
-    images/[id]/original/   # GET — original image (auth proxy)
+    conversions/                 # GET — list conversions
+    conversions/[id]/             # GET/PATCH/DELETE — metadata, rename, delete
+    conversions/[id]/processed/   # GET — processed image (auth proxy)
+    conversions/[id]/original/   # GET — original image (auth proxy)
 
 components/
   app-shell, header, sidebar
