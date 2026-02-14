@@ -88,9 +88,10 @@ export default function LoginPrompt() {
           variant="primary"
           onClick={handleLoginClick}
           className="login-prompt-glow !py-2 text-sm sm:text-base gap-2"
+          aria-label="Sign in to save your work"
         >
           <svg
-            className="w-5 h-5"
+            className="w-5 h-5 shrink-0"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -103,7 +104,6 @@ export default function LoginPrompt() {
             />
           </svg>
           <span className="hidden sm:inline">Sign in to save your work</span>
-          <span className="sm:hidden">Sign in</span>
         </Button>
         <LoginModal isOpen={showModal} onClose={() => setShowModal(false)} />
       </>
@@ -117,9 +117,10 @@ export default function LoginPrompt() {
         variant="secondary"
         onClick={handleLoginClick}
         className="!py-2 gap-2"
+        aria-label="Sign in"
       >
         <svg
-          className="w-4 h-4"
+          className="w-4 h-4 shrink-0"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -131,7 +132,7 @@ export default function LoginPrompt() {
             d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
           />
         </svg>
-        Sign in
+        <span className="hidden sm:inline">Sign in</span>
       </Button>
       <LoginModal isOpen={showModal} onClose={() => setShowModal(false)} />
     </>
