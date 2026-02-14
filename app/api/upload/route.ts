@@ -17,8 +17,6 @@ import {
 } from "@/lib/auth/guest";
 import { toProcessedImage } from "@/lib/types/image";
 
-// Configure route segment for longer execution time (image processing can be slow)
-export const maxDuration = 60; // 60 seconds max execution time
 /**
  * POST /api/upload
  *

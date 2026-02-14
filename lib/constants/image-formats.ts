@@ -5,28 +5,27 @@
  */
 
 export const ALLOWED_MIME_TYPES = [
-  'image/jpeg',
-  'image/jpg',
-  'image/png',
-  'image/webp',
-  'image/gif',
-  'image/avif',
-  'image/tiff',
-  'image/svg+xml',
-  'image/heic',
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/avif",
+  "image/tiff",
+  "image/svg+xml",
+  "image/heic",
 ] as const;
 
-/** Max file size: 20MB (below Remove.bg's 22MB limit) */
-export const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024;
-
-export const MAX_FILE_SIZE_MB = 20;
+/** Max file size: 4MB (within Vercel default body limit) */
+export const MAX_FILE_SIZE_MB = 4;
+export const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 /** Comma-separated MIME types for the file input accept attribute */
-export const ALLOWED_IMAGE_ACCEPT = ALLOWED_MIME_TYPES.join(',');
+export const ALLOWED_IMAGE_ACCEPT = ALLOWED_MIME_TYPES.join(",");
 
 /** Human-readable format list for UI */
 export const ALLOWED_IMAGE_LABEL =
-  'PNG, JPEG, WebP, GIF, AVIF, TIFF, SVG, HEIC';
+  "PNG, JPEG, WebP, GIF, AVIF, TIFF, SVG, HEIC";
 
 /** Size limit label for UI */
-export const MAX_FILE_SIZE_LABEL = 'Max 20MB';
+export const MAX_FILE_SIZE_LABEL = `Max ${MAX_FILE_SIZE_MB}MB`;

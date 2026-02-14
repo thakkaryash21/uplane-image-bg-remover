@@ -243,7 +243,7 @@ prisma/
 
 ## Supported Formats
 
-PNG, JPEG, WebP, GIF, AVIF, TIFF, SVG, HEIC. Max 20MB. Images are normalized to PNG before background removal.
+PNG, JPEG, WebP, GIF, AVIF, TIFF, SVG, HEIC. Max 4MB. Images are normalized to PNG before background removal.
 
 ---
 
